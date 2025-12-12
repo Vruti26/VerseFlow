@@ -1,3 +1,64 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "book-cover-1",
+      "description": "Abstract swirling colors on a book cover.",
+      "imageUrl": "https://images.unsplash.com/photo-1552250575-e508473b090f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhYnN0cmFjdCUyMGFydHxlbnwwfHx8fDE3NjU0NzAzMzd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract art"
+    },
+    {
+      "id": "book-cover-2",
+      "description": "A book cover with a silhouette of a person on a hill.",
+      "imageUrl": "https://images.unsplash.com/photo-1514539079130-25950c84af65?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxmYW50YXN5JTIwbGFuZHNjYXBlfGVufDB8fHx8MTc2NTU2NzU4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fantasy landscape"
+    },
+    {
+      "id": "book-cover-3",
+      "description": "A book cover with a futuristic cityscape.",
+      "imageUrl": "https://images.unsplash.com/photo-1544853014-9cc4f7f0202a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzY2ktZmklMjBjaXR5fGVufDB8fHx8MTc2NTU1OTk4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "sci-fi city"
+    },
+    {
+      "id": "book-cover-4",
+      "description": "A book cover with a vintage typewriter.",
+      "imageUrl": "https://images.unsplash.com/photo-1533140717783-6db98f7d7de6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx2aW50YWdlJTIwd3JpdGVyfGVufDB8fHx8MTc2NTU2NzU4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vintage writer"
+    },
+    {
+      "id": "book-cover-5",
+      "description": "A book cover with a mysterious forest path.",
+      "imageUrl": "https://images.unsplash.com/photo-1567338783090-f9c90dddc63b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxteXN0ZXJ5JTIwZm9yZXN0fGVufDB8fHx8MTc2NTU2NzU4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mystery forest"
+    },
+    {
+      "id": "book-cover-6",
+      "description": "A book cover showing a romantic couple.",
+      "imageUrl": "https://images.unsplash.com/photo-1649289887029-75b5f50fcc67?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxyb21hbmNlJTIwY291cGxlfGVufDB8fHx8MTc2NTUwMzc0N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "romance couple"
+    },
+    {
+      "id": "user-avatar-1",
+      "description": "Avatar for a user.",
+      "imageUrl": "https://images.unsplash.com/photo-1531123414780-f74242c2b052?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGVyc29uJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzY1NDU4MjcxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "user-avatar-2",
+      "description": "Avatar for another user.",
+      "imageUrl": "https://images.unsplash.com/photo-1484863137850-59afcfe05386?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwZXJzb24lMjBzbWlsaW5nfGVufDB8fHx8MTc2NTQ3Njg1M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person smiling"
+    },
+    {
+      "id": "user-avatar-3",
+      "description": "Avatar for a third user.",
+      "imageUrl": "https://images.unsplash.com/photo-1633934214315-d1a99cc349d7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHx3b21hbiUyMGZhY2V8ZW58MHx8fHwxNzY1NDg3MTk2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman face"
+    },
+    {
+      "id": "hero-background",
+      "description": "A background image for the hero section, showing an open book.",
+      "imageUrl": "https://images.unsplash.com/photo-1529589941132-43606325dfb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxvcGVuJTIwYm9va3xlbnwwfHx8fDE3NjU0NjQ0ODl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "open book"
+    }
+  ]
 }
