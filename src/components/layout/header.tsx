@@ -1,13 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { BookCopy, Feather, Library, LogIn, Menu, MessageSquare, Search, UserPlus } from 'lucide-react';
+import { BookCopy, Feather, Library, LogIn, Menu, MessageSquare, Search, UserPlus, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useAuth } from '@/hooks/use-auth';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: '/', label: 'Discover', icon: BookCopy },
@@ -18,7 +22,13 @@ const navLinks = [
 
 export default function Header() {
   const userAvatar = PlaceHolderImages.find(img => img.id === 'user-avatar-1');
-  const isLoggedIn = false; // Mock user state
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -50,28 +60,28 @@ export default function Header() {
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
-            {isLoggedIn ? (
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                       {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" />}
-                      <AvatarFallback>VF</AvatarFallback>
+                       {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User Avatar'} />}
+                      <AvatarFallback>{user.displayName?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">VerseFlow User</p>
-                      <p className="text-xs leading-none text-muted-foreground">user@verseflow.com</p>
+                      <p className="text-sm font-medium leading-none">{user.displayName || 'VerseFlow User'}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>Profile</DropdownMenuItem>
                   <DropdownMenuItem>Settings</DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Log out</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}><LogOut/> Log out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
@@ -110,12 +120,18 @@ export default function Header() {
                   </Link>
                 ))}
                  <div className="mt-4 flex flex-col gap-2">
-                    <Button variant="ghost" asChild>
-                      <Link href="/login"><LogIn/> Login</Link>
-                    </Button>
-                    <Button asChild>
-                      <Link href="/signup"><UserPlus/> Sign Up</Link>
-                    </Button>
+                    {user ? (
+                       <Button variant="ghost" onClick={handleLogout}><LogOut/> Logout</Button>
+                    ) : (
+                        <>
+                            <Button variant="ghost" asChild>
+                            <Link href="/login"><LogIn/> Login</Link>
+                            </Button>
+                            <Button asChild>
+                            <Link href="/signup"><UserPlus/> Sign Up</Link>
+                            </Button>
+                        </>
+                    )}
                   </div>
               </nav>
             </SheetContent>
