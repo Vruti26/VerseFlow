@@ -13,10 +13,13 @@ export default function AboutPage() {
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-headline font-bold tracking-tight text-gray-900 dark:text-gray-100">
           About VerseFlow
         </h1>
-        <p className="mt-6 text-lg md:text-xl text-muted-foreground">
+       
+        <p className="mt-6 text-lg md:text-l text-muted-foreground">
           Where stories find their voice, and readers find their world.
         </p>
       </div>
+      <br></br>
+      <hr></hr>
 
       <div className="max-w-3xl mx-auto mt-12 md:mt-16 space-y-8 text-left">
         <div className="space-y-4">
@@ -48,7 +51,13 @@ export default function AboutPage() {
             Your next chapter starts here.
           </p>
         </div>
+        <hr></hr>
+      
+        <p className="mt-4 pl-10 md:pl-0 text-l md:text-l text-muted-foreground">
+        © 2025 Vruti Rupapara. All rights reserved.
+          </p>
       </div>
+     
     </div>
   );
 }
