@@ -1,8 +1,22 @@
 import type { Metadata } from 'next';
+import { Literata, Space_Grotesk } from 'next/font/google';
 import { Toaster } from "@/components/ui/toaster";
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/hooks/use-auth';
+import GlobalHeader from '@/components/layout/global-header';
+
+const literata = Literata({
+  subsets: ['latin'],
+  variable: '--font-literata',
+  display: 'swap',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'VerseFlow',
@@ -16,15 +30,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Literata&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk&display=swap" rel="stylesheet" />
-      </head>
-      <body className={cn("min-h-screen bg-background font-body antialiased")}>
+      <body 
+        className={cn(
+          "min-h-screen bg-background font-body antialiased", 
+          "flex flex-col", 
+          literata.variable, 
+          spaceGrotesk.variable
+        )}
+      >
           <AuthProvider>
-            {children}
+            <GlobalHeader />
+            <main className="flex-1">
+              {children}
+            </main>
           </AuthProvider>
           <Toaster />
       </body>

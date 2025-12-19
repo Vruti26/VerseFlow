@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Corrected: Added useEffect
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Login Successful", description: "Welcome back!" });
+      // The router push here is fine because it's in an async handler, not during render
       router.push('/');
     } catch (error: any) {
       toast({
@@ -38,8 +39,15 @@ export default function LoginPage() {
     }
   };
 
+  // Corrected: Moved router.push into a useEffect hook
+  useEffect(() => {
+    if (user) {
+      router.push('/');
+    }
+  }, [user, router]);
+
+  // While the redirect is happening, we can return null or a loading spinner
   if (user) {
-    router.push('/');
     return null;
   }
 
@@ -70,7 +78,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
-                <Link href="#" className="ml-auto inline-block text-sm underline">
+                <Link href="/forgot-password" className="ml-auto inline-block text-sm underline">
                   Forgot your password?
                 </Link>
               </div>

@@ -1,12 +1,66 @@
-import { books } from "@/lib/placeholder-data";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query } from 'firebase/firestore';
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Loader2 } from "lucide-react";
 import Image from "next/image";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+
+interface Book {
+    id: string;
+    title: string;
+    authorId: string;
+    chapters: string[];
+    coverImage: string;
+    status: string;
+}
 
 export default function AdminBooksPage() {
+    const [books, setBooks] = useState<Book[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const q = query(collection(db, 'books'));
+                const snapshotUnsubscribe = onSnapshot(q, (snapshot) => {
+                    const booksData: Book[] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Book));
+                    setBooks(booksData);
+                    setLoading(false);
+                });
+                return () => snapshotUnsubscribe();
+            } else {
+                setLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleStatusChange = async (id: string, status: string) => {
+        const bookRef = doc(db, 'books', id);
+        await updateDoc(bookRef, { status });
+        toast({ title: 'Success', description: `Book has been ${status}.` });
+    };
+
+    const handleDelete = async (id: string) => {
+        if (confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
+            await deleteDoc(doc(db, 'books', id));
+            toast({ variant: 'destructive', title: 'Deleted', description: 'The book has been permanently deleted.' });
+        }
+    };
+
+    if (loading) {
+        return <div className="flex items-center justify-center h-48"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>;
+    }
+
     return (
         <div>
             <h1 className="font-headline text-3xl font-bold mb-6">Book Management</h1>
@@ -15,45 +69,47 @@ export default function AdminBooksPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Book Title</TableHead>
-                            <TableHead>Author</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead>Chapters</TableHead>
-                            <TableHead>Hashtags</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {books.map(book => {
-                            const coverImage = PlaceHolderImages.find(p => p.id === book.coverImageId);
-                            return (
-                                <TableRow key={book.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            {coverImage &&
-                                                <Image src={coverImage.imageUrl} alt={book.title} width={40} height={60} className="rounded-sm object-cover"/>
+                        {books.map(book => (
+                            <TableRow key={book.id}>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        <Image src={book.coverImage || '/placeholder-cover.jpg'} alt={book.title} width={40} height={60} className="rounded-sm object-cover"/>
+                                        <span className="font-medium">{book.title}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${book.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                        {book.status}
+                                    </span>
+                                </TableCell>
+                                <TableCell>{book.chapters?.length || 0}</TableCell>
+                                <TableCell className="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <Link href={`/books/${book.id}`} passHref><DropdownMenuItem>View Book</DropdownMenuItem></Link>
+                                            {book.status !== 'published' &&
+                                                <DropdownMenuItem onClick={() => handleStatusChange(book.id, 'published')}>Publish Book</DropdownMenuItem>
                                             }
-                                            <span className="font-medium">{book.title}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{book.author}</TableCell>
-                                    <TableCell>{book.chapters.length}</TableCell>
-                                    <TableCell className="max-w-xs truncate">{book.hashtags.join(', ')}</TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem>View Book</DropdownMenuItem>
-                                                <DropdownMenuItem>Unpublish Book</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive">Delete Book</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
+                                            {book.status === 'published' &&
+                                                <DropdownMenuItem onClick={() => handleStatusChange(book.id, 'draft')}>Unpublish Book</DropdownMenuItem>
+                                            }
+                                            <DropdownMenuItem onClick={() => handleDelete(book.id)} className="text-destructive">Delete Book</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
                     </TableBody>
                 </Table>
             </div>

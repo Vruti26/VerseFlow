@@ -1,13 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { BookCopy, Feather, Library, LogIn, Menu, MessageSquare, Search, UserPlus, LogOut } from 'lucide-react';
+import { BookCopy, Feather, Library, LogIn, Menu, MessageSquare, UserPlus, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth } from '@/hooks/use-auth';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -21,7 +19,6 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const userAvatar = PlaceHolderImages.find(img => img.id === 'user-avatar-1');
   const { user } = useAuth();
   const router = useRouter();
 
@@ -52,13 +49,6 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative hidden w-full max-w-sm items-center md:flex">
-            <Input type="text" placeholder="Search books or authors..." className="pl-10" />
-            <span className="absolute inset-y-0 left-0 flex items-center justify-center pl-3">
-              <Search className="h-5 w-5 text-muted-foreground" />
-            </span>
-          </div>
-
           <div className="hidden items-center gap-2 md:flex">
             {user ? (
               <DropdownMenu>
@@ -78,19 +68,19 @@ export default function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/profile')}>Profile</DropdownMenuItem>
                   <DropdownMenuItem>Settings</DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}><LogOut/> Log out</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/> Log out</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <>
                 <Button variant="ghost" asChild>
-                  <Link href="/login"><LogIn/> Login</Link>
+                  <Link href="/login"><LogIn className="mr-2 h-4 w-4"/> Login</Link>
                 </Button>
                 <Button asChild>
-                  <Link href="/signup"><UserPlus/> Sign Up</Link>
+                  <Link href="/signup"><UserPlus className="mr-2 h-4 w-4"/> Sign Up</Link>
                 </Button>
               </>
             )}
@@ -121,14 +111,14 @@ export default function Header() {
                 ))}
                  <div className="mt-4 flex flex-col gap-2">
                     {user ? (
-                       <Button variant="ghost" onClick={handleLogout}><LogOut/> Logout</Button>
+                       <Button variant="ghost" onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/> Logout</Button>
                     ) : (
                         <>
                             <Button variant="ghost" asChild>
-                            <Link href="/login"><LogIn/> Login</Link>
+                            <Link href="/login"><LogIn className="mr-2 h-4 w-4"/> Login</Link>
                             </Button>
                             <Button asChild>
-                            <Link href="/signup"><UserPlus/> Sign Up</Link>
+                            <Link href="/signup"><UserPlus className="mr-2 h-4 w-4"/> Sign Up</Link>
                             </Button>
                         </>
                     )}

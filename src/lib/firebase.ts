@@ -1,5 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,6 +12,9 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Log the project ID to the server console to verify it's loaded correctly.
+console.log("Initializing Firebase for project:", firebaseConfig.projectId);
+
 function createFirebaseApp() {
   if (getApps().length > 0) {
     return getApps()[0];
@@ -19,3 +24,5 @@ function createFirebaseApp() {
 
 export const firebaseApp = createFirebaseApp();
 export const auth = getAuth(firebaseApp);
+export const db = getFirestore(firebaseApp);
+export const storage = getStorage(firebaseApp);

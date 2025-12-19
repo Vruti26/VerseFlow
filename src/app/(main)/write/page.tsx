@@ -1,103 +1,112 @@
-import { SynopsisAssistant } from '@/components/ai/synopsis-assistant';
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { Feather, Book, Tag, Save, Upload } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Feather, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import { doc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function WritePage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+
+  const handleCreateAndRedirect = async () => {
+    setIsCreating(true);
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to create a book.' });
+      setIsCreating(false);
+      return;
+    }
+
+    if (!title) {
+        toast({ variant: 'destructive', title: 'Title is required', description: 'Please enter a title for your book.' });
+        setIsCreating(false);
+        return;
+    }
+
+    const newBookRef = doc(collection(db, 'books'));
+    const newBookId = newBookRef.id;
+
+    try {
+        await setDoc(newBookRef, {
+            id: newBookId,
+            title,
+            description,
+            authorId: user.uid,
+            author: user.displayName || 'Anonymous',
+            status: 'draft',
+            coverImageId: '',
+            tags: [],
+            chapters: [],
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        toast({ title: 'Book Created', description: 'Redirecting you to the editor...' });
+        router.push(`/write/${newBookId}`);
+
+    } catch (error) {
+        console.error("Error creating book:", error);
+        toast({ variant: 'destructive', title: 'Failed to Create Book', description: 'An unexpected error occurred. Please try again.' });
+        setIsCreating(false);
+    }
+  };
+
   return (
     <div className="container py-8 md:py-12">
-      <div className="flex items-center gap-4 mb-8">
-        <Feather className="h-8 w-8 text-primary" />
-        <h1 className="font-headline text-4xl font-bold">Writer's Dashboard</h1>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2 text-2xl"><Book/> Book Details</CardTitle>
-              <CardDescription>
-                Provide the core details of your story. A great title and synopsis are key to attracting readers.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="title" className="text-base">Book Title</Label>
-                <Input id="title" placeholder="e.g., The Last Dragon's Song" className="mt-2 text-lg h-12" />
-              </div>
-              
-              <div>
-                <Label htmlFor="hashtags" className="text-base flex items-center gap-2"><Tag/> Hashtags</Label>
-                 <p className="text-sm text-muted-foreground mb-2">
-                    Add up to 5 hashtags to help readers find your book.
-                 </p>
-                <Input id="hashtags" placeholder="#fantasy #magic #adventure" />
-              </div>
-
-               <div>
-                <Label htmlFor="cover" className="text-base flex items-center gap-2"><Upload/> Book Cover</Label>
-                 <p className="text-sm text-muted-foreground mb-2">
-                    Upload an image for your book's cover.
-                 </p>
-                 <Input id="cover" type="file" />
-              </div>
-
-            </CardContent>
-          </Card>
-          
-          <Separator/>
-          
-          <SynopsisAssistant />
-          
-          <Separator/>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline text-2xl">Write a New Chapter</CardTitle>
-              <CardDescription>
-                Let your story unfold. You can save your progress at any time.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div>
-                    <Label htmlFor="chapter-title" className="text-base">Chapter Title</Label>
-                    <Input id="chapter-title" placeholder="e.g., The Awakening" className="mt-2 text-lg h-12" />
-                </div>
-                <div>
-                    <Label htmlFor="chapter-content" className="text-base">Chapter Content</Label>
-                    <Textarea id="chapter-content" rows={20} placeholder="It was a dark and stormy night..." className="mt-2 font-body text-base leading-relaxed"/>
-                </div>
-            </CardContent>
-          </Card>
-          
+        <div className="flex items-center gap-4 mb-8">
+            <Feather className="h-8 w-8 text-primary" />
+            <h1 className="font-headline text-4xl font-bold">Start Your Next Book</h1>
         </div>
 
-        <div className="lg:col-span-1">
-          <div className="sticky top-24 space-y-6">
-              <Card>
+        <div className="max-w-2xl mx-auto">
+            <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">Actions</CardTitle>
+                    <CardTitle className="font-headline text-2xl">Create a New Book</CardTitle>
+                    <CardDescription>
+                        Fill in the details below to start your next masterpiece. 
+                        You can always change these later.
+                    </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-2">
-                    <Button size="lg"><Save /> Save Draft</Button>
-                    <Button size="lg" variant="secondary">Publish Book</Button>
+                <CardContent className="flex flex-col gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="title">Title</Label>
+                        <Input 
+                            id="title"
+                            placeholder="Your book's title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            disabled={isCreating}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="description">Description (Optional)</Label>
+                        <Textarea 
+                            id="description"
+                            placeholder="A short summary of your book..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            disabled={isCreating}
+                            rows={4}
+                        />
+                    </div>
+                    <Button size="lg" onClick={handleCreateAndRedirect} disabled={isCreating} className="w-full mt-2">
+                        {isCreating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : 'Create Book & Start Writing'}
+                    </Button>
                 </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Your Chapters</CardTitle>
-                </CardHeader>
-                <CardContent>
-                   <p className="text-sm text-muted-foreground">No chapters written yet.</p>
-                </CardContent>
-              </Card>
-          </div>
+            </Card>
         </div>
-      </div>
     </div>
   );
 }

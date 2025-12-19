@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
@@ -22,27 +22,50 @@ export default function SignupPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // This effect handles the case where a user who is already logged in
+  // navigates to the signup page. It should redirect them away.
+  useEffect(() => {
+    if (user) {
+      router.push('/');
+    }
+  }, [user, router]);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(userCredential.user, { displayName: name });
-      toast({ title: 'Account Created', description: 'Welcome to VerseFlow!' });
+      
+      toast({ 
+        title: 'Account Created', 
+        description: 'Welcome to VerseFlow! Redirecting you now...' 
+      });
+
+      // CORRECTED: Explicitly redirect after signup is successful.
+      // This avoids the race condition with the main layout's auth check.
       router.push('/');
+
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
         description: error.message,
       });
+      // Only set loading to false if there was an error
       setLoading(false);
     }
+    // No finally block needed, as successful signup navigates away
   };
 
+  // If a user is already logged in, we can show a loading/redirecting message
+  // or just null until the useEffect redirects them.
   if (user) {
-    router.push('/');
-    return null;
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
   }
 
   return (
