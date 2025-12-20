@@ -1,6 +1,12 @@
-[{
-  "origin": ["https://9000-firebase-studio-1765566404706.cluster-iktsryn7xnhpexlu6255bftka4.cloudworkstations.dev", "http://localhost:3000"],
-  "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"],
-  "maxAgeSeconds": 3600
-}]
+[
+  {
+    "origin": [
+      "https://9000-firebase-studio-1765566404706.cluster-iktsryn7xnhpexlu6255bftka4.cloudworkstations.dev",
+      "http://localhost:3000",
+      "https://verseflow-vr.vercel.app"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"],
+    "maxAgeSeconds": 3600
+  }
+]
