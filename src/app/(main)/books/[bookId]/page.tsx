@@ -4,15 +4,16 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove, where, setDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove, where, setDoc, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Share2, Bookmark, BookOpen, Star, Send } from 'lucide-react';
+import { Loader2, Share2, Bookmark, BookOpen, Star, Send, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import Link from 'next/link';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Book {
   id: string;
@@ -156,7 +157,6 @@ export default function PublicBookPage() {
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
-        // User document exists, update it.
         await updateDoc(userRef, {
           readingList: isInLibrary
             ? arrayRemove(bookId as string)
@@ -164,7 +164,6 @@ export default function PublicBookPage() {
         });
         toast({ title: isInLibrary ? 'Removed from library' : 'Added to library!' });
       } else {
-        // User document does not exist, create it.
         if (!isInLibrary) {
           await setDoc(userRef, {
             displayName: user.displayName || 'Anonymous',
@@ -173,7 +172,6 @@ export default function PublicBookPage() {
           });
           toast({ title: 'Added to library!' });
         } else {
-            // This is an inconsistent state, but we can handle it gracefully.
             await setDoc(userRef, {
                 displayName: user.displayName || 'Anonymous',
                 photoURL: user.photoURL || '',
@@ -213,6 +211,17 @@ export default function PublicBookPage() {
         toast({ variant: 'destructive', title: 'Failed to submit review'});
     } finally {
         setIsSubmittingReview(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!user || !bookId) return;
+    try {
+        const reviewRef = doc(db, 'books', bookId as string, 'reviews', reviewId);
+        await deleteDoc(reviewRef);
+        toast({ title: 'Review Deleted' });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Failed to delete review' });
     }
   };
 
@@ -301,13 +310,34 @@ export default function PublicBookPage() {
                                         <AvatarImage src={review.author.photoURL} />
                                         <AvatarFallback>{review.author.displayName.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-semibold">{review.author.displayName}</p>
-                                            <div className="flex items-center">
-                                                {[...Array(review.rating)].map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-current"/>)}
-                                                {[...Array(5 - review.rating)].map((_, i) => <Star key={i} className="h-4 w-4 text-gray-300"/>)}
+                                    <div className='w-full'>
+                                        <div className="flex items-center justify-between">
+                                            <div className='flex items-center gap-2'>
+                                                <p className="font-semibold">{review.author.displayName}</p>
+                                                <div className="flex items-center">
+                                                    {[...Array(review.rating)].map((_, i) => <Star key={i} className="h-4 w-4 text-yellow-400 fill-current"/>)}
+                                                    {[...Array(5 - review.rating)].map((_, i) => <Star key={i} className="h-4 w-4 text-gray-300"/>)}
+                                                </div>
                                             </div>
+                                            {user && user.uid === review.author.uid && (
+                                                 <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon">
+                                                            <Trash2 className="h-4 w-4 text-destructive"/>
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                            <AlertDialogDescription>This action cannot be undone. This will permanently delete your review.</AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteReview(review.id)}>Delete</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
                                         </div>
                                         <p className="text-sm text-muted-foreground">{new Date(review.createdAt?.toDate()).toLocaleDateString()}</p>
                                         <p className="mt-2">{review.text}</p>

@@ -197,7 +197,7 @@ export default function BookEditorPage() {
 
   return (
     <div className="container py-8 md:py-12">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
             {book && (
                  <Input 
                     type="text" 
@@ -207,12 +207,12 @@ export default function BookEditorPage() {
                     className="font-headline text-4xl font-bold h-auto border-none focus-visible:ring-0 shadow-none p-0"
                 />
             )}
-            <div className="flex items-center">
-                <Button onClick={() => handleSaveDraft()} disabled={saving || !activeChapter} variant="outline" className="mr-2">
+            <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0 w-full md:w-auto">
+                <Button onClick={() => handleSaveDraft()} disabled={saving || !activeChapter} variant="outline">
                     {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                     Save Draft
                 </Button>
-                <Button onClick={handlePublish} disabled={saving || !activeChapter} className="mr-2">
+                <Button onClick={handlePublish} disabled={saving || !activeChapter}>
                     {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
                     {book?.status === 'published' ? 'Publish Changes' : 'Publish Book'}
                 </Button>

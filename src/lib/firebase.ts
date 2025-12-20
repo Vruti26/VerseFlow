@@ -6,8 +6,14 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
+// Clean the API key, removing potential quotes and commas from the environment variable.
+const apiKey = (process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '')
+  .trim()
+  .replace(/^"|"$/g, '')
+  .replace(/,$/, '');
+
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  apiKey: apiKey,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
