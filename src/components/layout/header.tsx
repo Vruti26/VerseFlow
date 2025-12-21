@@ -1,10 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { BookCopy, Feather, Library, LogIn, Menu, MessageSquare, UserPlus, LogOut, User as UserIcon, Settings } from 'lucide-react';
+import { BookCopy, Feather, Info, LogIn, Menu, User, UserPlus, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTrigger } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/use-auth';
 import { signOut } from 'firebase/auth';
@@ -14,8 +13,7 @@ import { useRouter } from 'next/navigation';
 const navLinks = [
   { href: '/', label: 'Discover', icon: BookCopy },
   { href: '/write', label: 'Write', icon: Feather },
-  { href: '/library', label: 'Library', icon: Library },
-  { href: '/messages', label: 'Messages', icon: MessageSquare },
+  { href: '/about', label: 'About', icon: Info },
 ];
 
 export default function Header() {
@@ -25,6 +23,63 @@ export default function Header() {
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/login');
+  };
+
+  const renderMobileMenu = () => {
+    return (
+        <div className="md:hidden">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                        <Avatar className="h-8 w-8">
+                            {user && user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User Avatar'} />}
+                            <AvatarFallback>{user ? (user.displayName?.charAt(0) || user.email?.charAt(0)) : <User/>}</AvatarFallback>
+                        </Avatar>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                    {user ? (
+                        <>
+                            <DropdownMenuLabel className="font-normal">
+                                <div className="flex flex-col space-y-1">
+                                <p className="text-sm font-medium leading-none">{user.displayName || 'VerseFlow User'}</p>
+                                <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                                {navLinks.map(link => (
+                                    <DropdownMenuItem key={link.href} onClick={() => router.push(link.href)}>
+                                        <link.icon className="mr-2 h-4 w-4" />
+                                        <span>{link.label}</span>
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push('/profile')}><User className="mr-2 h-4 w-4"/> Profile</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/settings')}><Settings className="mr-2 h-4 w-4"/> Settings</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/> Log out</DropdownMenuItem>
+                        </>
+                    ) : (
+                        <>
+                             <DropdownMenuGroup>
+                                {navLinks.map(link => (
+                                    <DropdownMenuItem key={link.href} onClick={() => router.push(link.href)}>
+                                        <link.icon className="mr-2 h-4 w-4" />
+                                        <span>{link.label}</span>
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push('/login')}><LogIn className="mr-2 h-4 w-4"/> Login</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push('/signup')}><UserPlus className="mr-2 h-4 w-4"/> Sign Up</DropdownMenuItem>
+                        </>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    );
   };
 
   return (
@@ -70,7 +125,7 @@ export default function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push('/profile')}><UserIcon className="mr-2 h-4 w-4"/> Profile</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/profile')}><User className="mr-2 h-4 w-4"/> Profile</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/settings')}><Settings className="mr-2 h-4 w-4"/> Settings</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}><LogOut className="mr-2 h-4 w-4"/> Log out</DropdownMenuItem>
@@ -88,76 +143,8 @@ export default function Header() {
             )}
           </div>
           
-          {/* Mobile Hamburger Menu */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-               <SheetHeader>
-                 <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
-                    <BookCopy className="h-6 w-6 text-primary" />
-                    <span className="font-headline text-xl font-bold">VerseFlow</span>
-                </Link>
-              </SheetHeader>
-
-              {user ? (
-                <div className="flex h-full flex-col justify-between">
-                   <nav className="grid gap-4 text-base font-medium mt-4">
-                    {navLinks.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className="flex items-center gap-4 text-muted-foreground hover:text-foreground"
-                      >
-                        <link.icon className="h-5 w-5" />
-                        {link.label}
-                      </Link>
-                    ))}
-                     <Link
-                        href='/profile'
-                        className="flex items-center gap-4 text-muted-foreground hover:text-foreground"
-                      >
-                        <UserIcon className="h-5 w-5" />
-                        Profile
-                      </Link>
-                      <Link
-                        href='/settings'
-                        className="flex items-center gap-4 text-muted-foreground hover:text-foreground"
-                      >
-                        <Settings className="h-5 w-5" />
-                        Settings
-                      </Link>
-                  </nav>
-                   <div className="mt-auto mb-4">
-                    <div className="flex items-center gap-3 mb-4">
-                        <Avatar className="h-10 w-10">
-                            {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User Avatar'} />}
-                            <AvatarFallback>{user.displayName?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                             <p className="text-sm font-medium leading-none">{user.displayName || 'VerseFlow User'}</p>
-                             <p className="text-xs leading-none text-muted-foreground truncate">{user.email}</p>
-                        </div>
-                    </div>
-                     <Button variant="outline" onClick={handleLogout} className="w-full"><LogOut className="mr-2 h-4 w-4"/> Logout</Button>
-                  </div>
-                </div>
-              ) : (
-                <nav className="grid gap-4 text-base font-medium mt-4">
-                   <Button variant="default" asChild className='justify-start'>
-                        <Link href="/login"><LogIn className="mr-2 h-4 w-4"/> Login</Link>
-                    </Button>
-                    <Button variant="secondary" asChild className='justify-start'>
-                        <Link href="/signup"><UserPlus className="mr-2 h-4 w-4"/> Sign Up</Link>
-                    </Button>
-                </nav>
-              )}
-            </SheetContent>
-          </Sheet>
+          {/* Mobile User Menu */}
+          {renderMobileMenu()}
         </div>
       </div>
     </header>
