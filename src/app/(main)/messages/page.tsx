@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, Trash2, Loader2, Send } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import {
@@ -17,22 +18,61 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 
+interface User {
+  id: string;
+  displayName?: string;
+  email?: string;
+  photoURL?: string;
+}
+
+interface Message {
+  id: string;
+  text: string;
+  senderId: string;
+  timestamp: Timestamp;
+}
+
+interface Chat {
+  id: string;
+  users: string[];
+  lastMessage: string;
+  updatedAt: Timestamp;
+  otherUser?: User;
+}
+
 export default function MessagesPage() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [allUsers, setAllUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [chatId, setChatId] = useState(null);
-  const [recentChats, setRecentChats] = useState([]);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [recentChats, setRecentChats] = useState<Chat[]>([]);
   const [loadingRecents, setLoadingRecents] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    if (!authLoading && !currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, authLoading, router]);
 
   // Fetch all users for searching
   useEffect(() => {
@@ -40,8 +80,8 @@ export default function MessagesPage() {
     setLoadingUsers(true);
     const usersRef = collection(db, 'users');
     const unsubscribe = onSnapshot(usersRef, (snapshot) => {
-      const users = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+      const users: User[] = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as User))
         .filter(user => user.id !== currentUser.uid);
       setAllUsers(users);
       setLoadingUsers(false);
@@ -61,22 +101,22 @@ export default function MessagesPage() {
     const q = query(chatsRef, where('users', 'array-contains', currentUser.uid));
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const chats = [];
+      const chats: Chat[] = [];
       for (const chatDoc of snapshot.docs) {
         const chatData = chatDoc.data();
-        const otherUserId = chatData.users.find(uid => uid !== currentUser.uid);
+        const otherUserId = chatData.users.find((uid: string) => uid !== currentUser.uid);
         if (otherUserId) {
           try {
             const userDoc = await getDoc(doc(db, 'users', otherUserId));
             if (userDoc.exists()) {
-              chats.push({ ...chatData, id: chatDoc.id, otherUser: { id: userDoc.id, ...userDoc.data() } });
+              chats.push({ ...chatData, id: chatDoc.id, otherUser: { id: userDoc.id, ...userDoc.data() } as User } as Chat);
             }
           } catch (e) {
             console.error("Error fetching user for recent chat:", e)
           }
         }
       }
-      chats.sort((a, b) => (b.updatedAt?.toDate() || 0) - (a.updatedAt?.toDate() || 0));
+      chats.sort((a, b) => (b.updatedAt?.toDate().getTime() || 0) - (a.updatedAt?.toDate().getTime() || 0));
       setRecentChats(chats);
       setLoadingRecents(false);
     }, (error) => {
@@ -103,7 +143,7 @@ export default function MessagesPage() {
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message)));
       setLoadingMessages(false);
     }, (error) => {
         console.error("Error fetching messages: ", error);
@@ -112,13 +152,21 @@ export default function MessagesPage() {
 
     return () => unsubscribe();
   }, [currentUser, selectedUser]);
+  
+  if (authLoading || !currentUser) {
+    return (
+        <div className="flex justify-center items-center h-[calc(100vh-80px)]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   const searchResults = searchQuery.trim() === '' ? [] : allUsers.filter(user =>
     (user.displayName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (user.email?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleSelectUser = async (user) => {
+  const handleSelectUser = async (user: User) => {
     setSelectedUser(user);
     setSearchQuery('');
 
@@ -229,8 +277,13 @@ export default function MessagesPage() {
                     {recentChats.length > 0 ? (
                          <ul>
                             {recentChats.map(chat => (
-                                <li key={chat.id} onClick={() => handleSelectUser(chat.otherUser)} className={`p-2 hover:bg-gray-200 cursor-pointer rounded-md ${selectedUser?.id === chat.otherUser.id ? 'bg-gray-300' : ''}`}>
-                                    <p className="font-semibold">{chat.otherUser.displayName || chat.otherUser.email}</p>
+                                <li key={chat.id} onClick={() => handleSelectUser(chat.otherUser!)} className={`p-2 hover:bg-gray-200 cursor-pointer rounded-md ${selectedUser?.id === chat.otherUser?.id ? 'bg-gray-300' : ''}`}>
+                                    <div className="flex justify-between">
+                                        <p className="font-semibold">{chat.otherUser?.displayName || chat.otherUser?.email}</p>
+                                        <p className="text-xs text-gray-500">
+                                            {chat.updatedAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    </div>
                                     <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
                                 </li>
                             ))}
@@ -257,20 +310,26 @@ export default function MessagesPage() {
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                 ) : (
-                  <div className="space-y-4">
-                    {messages.map((msg) => (
-                        <div key={msg.id} className={`flex items-end gap-2 my-2 ${msg.senderId === currentUser.uid ? 'justify-end' : ''}`}>
-                            <div className={`rounded-lg px-4 py-2 max-w-lg shadow ${msg.senderId === currentUser.uid ? 'bg-blue-500 text-white' : 'bg-white'}`}>
-                                {msg.text}
+                  <>
+                    <div className="space-y-4">
+                        {messages.map((msg) => (
+                            <div key={msg.id} className={`flex items-end gap-2 my-2 ${msg.senderId === currentUser.uid ? 'justify-end' : ''}`}>
+                                <div className={`rounded-lg px-4 py-2 max-w-lg shadow ${msg.senderId === currentUser.uid ? 'bg-blue-500 text-white' : 'bg-white'}`}>
+                                    <p>{msg.text}</p>
+                                    <p className={`text-xs mt-1 ${msg.senderId === currentUser.uid ? 'text-white/70' : 'text-gray-500'}`}>
+                                        {msg.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
+                                {msg.senderId === currentUser.uid && (
+                                    <button onClick={() => handleDeleteMessage(msg.id)} className="text-gray-400 hover:text-red-500 opacity-50 hover:opacity-100">
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
-                            {msg.senderId === currentUser.uid && (
-                                <button onClick={() => handleDeleteMessage(msg.id)} className="text-gray-400 hover:text-red-500 opacity-50 hover:opacity-100">
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                  </div>
+                        ))}
+                    </div>
+                    <div ref={messagesEndRef} />
+                  </>
                 )}
             </div>
             <div className="p-4 border-t bg-white">
