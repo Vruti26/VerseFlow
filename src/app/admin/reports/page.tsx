@@ -1,12 +1,47 @@
-import { reports } from "@/lib/placeholder-data";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Report } from '@/lib/types';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Loader2 } from "lucide-react";
+import { toast } from '@/hooks/use-toast';
 
 export default function AdminReportsPage() {
+    const [reports, setReports] = useState<Report[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'reports'), 
+            (snapshot) => {
+                const reportsData: Report[] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Report);
+                setReports(reportsData);
+                setLoading(false);
+            },
+            (error) => {
+                console.error("Error fetching reports: ", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to fetch reports.' });
+                setLoading(false);
+            }
+        );
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleStatusChange = async (id: string, status: 'Pending' | 'Resolved') => {
+        const reportRef = doc(db, 'reports', id);
+        await updateDoc(reportRef, { status });
+        toast({ title: 'Success', description: `Report has been marked as ${status}.` });
+    };
+
+    if (loading) {
+        return <div className="flex items-center justify-center h-48"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>;
+    }
+
     return (
         <div>
             <h1 className="font-headline text-3xl font-bold mb-6">Content Reports</h1>
@@ -41,7 +76,9 @@ export default function AdminReportsPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent>
                                             <DropdownMenuItem>View Details</DropdownMenuItem>
-                                            <DropdownMenuItem>Mark as Resolved</DropdownMenuItem>
+                                            {report.status === 'Pending' &&
+                                                <DropdownMenuItem onClick={() => handleStatusChange(report.id, 'Resolved')}>Mark as Resolved</DropdownMenuItem>
+                                            }
                                             <DropdownMenuItem>Take Action</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>

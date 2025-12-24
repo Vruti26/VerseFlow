@@ -26,3 +26,15 @@ export interface UserProfile {
     email: string;
     photoURL?: string;
 }
+
+export interface Report {
+    id: string;
+    reportedItemId: string;
+    reportedItemType: 'book' | 'user';
+    reportedBy: string;
+    reason: string;
+    status: 'Pending' | 'Resolved';
+    createdAt: Timestamp;
+    bookTitle?: string;
+    userName?: string;
+}

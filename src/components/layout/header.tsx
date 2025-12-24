@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookCopy, Feather, Info, LogIn, Menu, User, UserPlus, LogOut, Settings } from 'lucide-react';
+import { BookCopy, Feather, Info, LogIn, Menu, User, UserPlus, LogOut, Settings, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +14,7 @@ const navLinks = [
   { href: '/', label: 'Discover', icon: BookCopy },
   { href: '/write', label: 'Write', icon: Feather },
   { href: '/about', label: 'About', icon: Info },
+  { href: '/messages', label: 'Messages', icon: MessageSquare },
 ];
 
 export default function Header() {

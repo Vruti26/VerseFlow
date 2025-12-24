@@ -57,7 +57,7 @@ export default function LoginPage() {
         <CardHeader>
           <div className="flex flex-col items-center text-center">
             <BookCopy className="h-8 w-8 mb-2 text-primary" />
-            <CardTitle className="font-headline text-2xl">Welcome Back to VerseFlow</CardTitle>
+            <CardTitle className="font-headline text-2xl">Welcome VerseFlow</CardTitle>
             <CardDescription>Enter your credentials to access your account.</CardDescription>
           </div>
         </CardHeader>
