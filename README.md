@@ -1,5 +1,6 @@
-# Firebase Studio
+# Library
 
-This is a NextJS starter in Firebase Studio.
+A library where you can read, write, review books as well message users.
 
-To get started, take a look at src/app/page.tsx.
+Live project deployed at https://verseflow-vr.vercel.app
+
