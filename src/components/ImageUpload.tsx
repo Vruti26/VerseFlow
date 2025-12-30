@@ -68,7 +68,7 @@ export default function ImageUpload({ onUpload }: ImageUploadProps) {
 
   return (
     <div>
-      <input type="file" onChange={handleFileChange} disabled={isUploading} />
+      <input type="file" onChange={handleFileChange} disabled={isUploading} accept="image/png, image/jpeg, image/gif"/>
       {isUploading && <p>Uploading...</p>}
     </div>
   );
