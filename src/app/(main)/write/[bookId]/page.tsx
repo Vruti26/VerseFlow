@@ -6,14 +6,19 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Send, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, Save, Send, PlusCircle, Trash2, GripVertical } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const RichTextEditor = dynamic(() => 
   import('@/components/rich-text-editor').then(mod => mod.RichTextEditor), 
@@ -28,7 +33,49 @@ interface Chapter {
   title: string;
   content: string;
   createdAt: any;
+  order: number;
 }
+
+const SortableChapter = ({ chapter, activeChapter, setActiveChapter, handleDeleteChapter }: any) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: chapter.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} className="flex items-center justify-between bg-background rounded-md">
+      <div className="flex items-center flex-grow">
+        <div {...listeners} className="cursor-grab p-2">
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <Button variant={activeChapter?.id === chapter.id ? 'secondary' : 'ghost'} onClick={() => setActiveChapter(chapter)} className="justify-start truncate flex-grow text-left">
+            {chapter.title}
+        </Button>
+      </div>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="sm" className="ml-2">
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the chapter "{chapter.title}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleDeleteChapter(chapter.id)}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
 
 export default function BookEditorPage() {
   const { bookId } = useParams();
@@ -43,6 +90,16 @@ export default function BookEditorPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chapterCreationTriggered = useRef(false);
+  const [autosave, setAutosave] = useState(true);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require pointer to move 8px before activating
+      },
+    })
+  );
 
   useEffect(() => {
     if (!bookId || !user) {
@@ -89,7 +146,7 @@ export default function BookEditorPage() {
   useEffect(() => {
     if (!book) return;
 
-    const chaptersQuery = query(collection(db, 'books', bookId as string, 'chapters'), orderBy('createdAt'));
+    const chaptersQuery = query(collection(db, 'books', bookId as string, 'chapters'), orderBy('order'));
     const unsubscribe = onSnapshot(chaptersQuery, async (snapshot) => {
       if (snapshot.empty && !chapterCreationTriggered.current) {
         chapterCreationTriggered.current = true;
@@ -97,16 +154,20 @@ export default function BookEditorPage() {
           await addDoc(collection(db, 'books', bookId as string, 'chapters'), {
             title: "Chapter 1",
             content: "<p>Start your story here...</p>",
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            order: 1,
           });
         } catch (err) {
            console.error("Failed to create initial chapter:", err);
            toast({ variant: 'destructive', title: 'Error', description: 'Could not create the first chapter.' });
         }
       } else {
-        const chapterData: Chapter[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Chapter));
-        setChapters(chapterData);
-        setActiveChapter(prev => chapterData.find(c => c.id === prev?.id) || chapterData[0] || null);
+        const chapterData: Chapter[] = snapshot.docs.map((doc, index) => ({ id: doc.id, ...doc.data(), order: doc.data().order || index + 1 } as Chapter));
+        const sortedChapters = chapterData.sort((a, b) => a.order - b.order);
+        setChapters(sortedChapters);
+        if (!activeChapter) {
+             setActiveChapter(sortedChapters[0] || null);
+        }
       }
     });
 
@@ -118,7 +179,7 @@ export default function BookEditorPage() {
     toast({ title: 'Cover Image Updated!' });
   };
 
-  const handleSaveDraft = async (options: { controlSavingState: boolean } = { controlSavingState: true }) => {
+  const handleSaveDraft = async (options: { controlSavingState: boolean, showToast: boolean } = { controlSavingState: true, showToast: true }) => {
     if (!bookId || !activeChapter) return;
     if (options.controlSavingState) setSaving(true);
     try {
@@ -130,13 +191,33 @@ export default function BookEditorPage() {
             title: book.title,
             coverImage: book.coverImage || ''
         });
-        toast({ title: 'Saved!' });
+        if (options.showToast) {
+            toast({ title: 'Saved!' });
+        }
     } catch (e: any) {
-        toast({ variant: 'destructive', title: 'Error Saving', description: e.message });
+        if (options.showToast) {
+            toast({ variant: 'destructive', title: 'Error Saving', description: e.message });
+        }
     } finally {
         if (options.controlSavingState) setSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (autosave && activeChapter) {
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+        }
+        debounceTimeout.current = setTimeout(() => {
+            handleSaveDraft({ controlSavingState: false, showToast: false });
+        }, 1000); // 1 second debounce
+    }
+    return () => {
+        if (debounceTimeout.current) {
+            clearTimeout(debounceTimeout.current);
+        }
+    };
+  }, [activeChapter?.content, activeChapter?.title, autosave]);
 
   const handlePublish = async () => {
     if (!bookId || !activeChapter) return;
@@ -146,7 +227,7 @@ export default function BookEditorPage() {
     }
     setSaving(true);
     try {
-        await handleSaveDraft({ controlSavingState: false });
+        await handleSaveDraft({ controlSavingState: false, showToast: false });
         const bookRef = doc(db, 'books', bookId as string);
         await updateDoc(bookRef, { 
             status: 'published',
@@ -165,27 +246,78 @@ export default function BookEditorPage() {
   const handleNewChapter = async () => {
     if (!bookId) return;
     try {
-      await addDoc(collection(db, 'books', bookId as string, 'chapters'), {
+      const newOrder = chapters.length > 0 ? Math.max(...chapters.map(c => c.order)) + 1 : 1;
+      const newChapterRef = await addDoc(collection(db, 'books', bookId as string, 'chapters'), {
         title: `Chapter ${chapters.length + 1}`,
         content: '<p>Start writing...</p>',
         createdAt: serverTimestamp(),
+        order: newOrder,
       });
+      // No need to manually set active chapter, the onSnapshot will handle it.
     } catch (e) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not create new chapter.' });
     }
   };
 
-    const handleDeleteBook = async () => {
-        if (!bookId) return;
+  const handleDeleteChapter = async (chapterId: string) => {
+    if (!bookId) return;
+
+    if (chapters.length <= 1) {
+        toast({
+            variant: 'destructive',
+            title: 'Cannot Delete',
+            description: 'You must have at least one chapter in your book.',
+        });
+        return;
+    }
+
+    try {
+        await deleteDoc(doc(db, 'books', bookId as string, 'chapters', chapterId));
+        toast({ title: 'Chapter Deleted' });
+        const remainingChapters = chapters.filter(c => c.id !== chapterId);
+        setActiveChapter(remainingChapters[0] || null);
+    } catch (error) {
+        console.error("Error deleting chapter:", error);
+        toast({ variant: 'destructive', title: 'Error Deleting Chapter', description: 'Could not delete the chapter. Please try again.' });
+    }
+  };
+
+  const handleDeleteBook = async () => {
+      if (!bookId) return;
+      try {
+          await deleteDoc(doc(db, 'books', bookId as string));
+          toast({ title: 'Book Deleted', description: 'Your book has been permanently removed.' });
+          router.push('/profile');
+      } catch (error) {
+          console.error("Error deleting book:", error);
+          toast({ variant: 'destructive', title: 'Error Deleting Book', description: 'An unexpected error occurred. Please try again.' });
+      }
+  };
+
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+        const oldIndex = chapters.findIndex((c) => c.id === active.id);
+        const newIndex = chapters.findIndex((c) => c.id === over.id);
+        const newChapters = arrayMove(chapters, oldIndex, newIndex);
+        setChapters(newChapters);
+
         try {
-            await deleteDoc(doc(db, 'books', bookId as string));
-            toast({ title: 'Book Deleted', description: 'Your book has been permanently removed.' });
-            router.push('/profile');
+            const batch = writeBatch(db);
+            newChapters.forEach((chapter, index) => {
+                const chapterRef = doc(db, 'books', bookId as string, 'chapters', chapter.id);
+                batch.update(chapterRef, { order: index + 1 });
+            });
+            await batch.commit();
+            toast({ title: "Chapter order saved!" });
         } catch (error) {
-            console.error("Error deleting book:", error);
-            toast({ variant: 'destructive', title: 'Error Deleting Book', description: 'An unexpected error occurred. Please try again.' });
+            console.error("Error updating chapter order:", error);
+            toast({ variant: 'destructive', title: 'Error Saving Order', description: 'Could not save the new chapter order.' });
+            // Revert to original order on failure
+            setChapters(chapters);
         }
-    };
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>;
@@ -207,8 +339,12 @@ export default function BookEditorPage() {
                     className="font-headline text-4xl font-bold h-auto border-none focus-visible:ring-0 shadow-none p-0"
                 />
             )}
-            <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0 w-full md:w-auto">
-                <Button onClick={() => handleSaveDraft()} disabled={saving || !activeChapter} variant="outline">
+            <div className="flex flex-col md:flex-row gap-2 mt-4 md:mt-0 w-full md:w-auto items-center">
+                <div className="flex items-center space-x-2">
+                    <Switch id="autosave-switch" checked={autosave} onCheckedChange={setAutosave} />
+                    <Label htmlFor="autosave-switch">Autosave</Label>
+                </div>
+                <Button onClick={() => handleSaveDraft({ controlSavingState: true, showToast: true })} disabled={saving || !activeChapter || autosave} variant="outline">
                     {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                     Save Draft
                 </Button>
@@ -253,11 +389,21 @@ export default function BookEditorPage() {
                         </Button>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-col space-y-2">
-                            {chapters.map((chapter) => (
-                                <Button key={chapter.id} variant={activeChapter?.id === chapter.id ? 'secondary' : 'ghost'} onClick={() => setActiveChapter(chapter)} className="justify-start truncate">{chapter.title}</Button>
-                            ))}
-                        </div>
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={chapters.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                                <div className="flex flex-col space-y-2">
+                                    {chapters.map((chapter) => (
+                                        <SortableChapter 
+                                            key={chapter.id} 
+                                            chapter={chapter} 
+                                            activeChapter={activeChapter} 
+                                            setActiveChapter={setActiveChapter} 
+                                            handleDeleteChapter={handleDeleteChapter} 
+                                        />
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
                     </CardContent>
                 </Card>
             </div>
@@ -272,7 +418,7 @@ export default function BookEditorPage() {
                     </Card>
                 ) : (
                     <div className="flex items-center justify-center text-center py-20 border-2 border-dashed rounded-lg min-h-[500px]">
-                        <div><h3 className="text-lg font-medium">{chapters.length > 0 ? 'Select a chapter' : 'Loading chapter...'}</h3></div>
+                        <div><h3 className="text-lg font-medium">{chapters.length > 0 ? 'Select a chapter to start editing' : 'Create a chapter to begin'}</h3></div>
                     </div>
                 )}
             </div>

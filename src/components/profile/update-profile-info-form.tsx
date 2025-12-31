@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { updateProfile } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,22 +12,63 @@ import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { updateUserProfileDocument } from '@/lib/update-user-profile';
 
-export default function UpdateProfileInfoForm() {
+// Define the shape of the data passed in
+interface UserProfileData {
+    displayName?: string | null;
+    photoURL?: string | null;
+}
+
+// Define the props for the component
+interface UpdateProfileInfoFormProps {
+    initialData: UserProfileData | null;
+}
+
+export default function UpdateProfileInfoForm({ initialData }: UpdateProfileInfoFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
+  
+  // Initialize state from initialData, falling back to auth user
+  const [displayName, setDisplayName] = useState(initialData?.displayName || user?.displayName || '');
+  const [photoURL, setPhotoURL] = useState(initialData?.photoURL || user?.photoURL || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Sync state if the initialData or user context changes
+  useEffect(() => {
+    if (initialData) {
+        setDisplayName(initialData.displayName || '');
+        setPhotoURL(initialData.photoURL || '');
+    } else if (user) {
+        setDisplayName(user.displayName || '');
+        setPhotoURL(user.photoURL || '');
+    }
+  }, [initialData, user]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to update your profile.' });
+        return;
+    };
 
     setIsSaving(true);
     try {
-      await updateProfile(user, { displayName, photoURL });
-      await updateUserProfileDocument(user.uid, { displayName, photoURL });
-      toast({ title: 'Profile Updated', description: 'Your profile information has been successfully updated.' });
+      // Create an object with the fields to update
+      const profileUpdates: { displayName?: string; photoURL?: string } = {};
+      if (displayName !== (user.displayName || '')) {
+        profileUpdates.displayName = displayName;
+      }
+      if (photoURL !== (user.photoURL || '')) {
+        profileUpdates.photoURL = photoURL;
+      }
+
+      // Only update if there are changes
+      if (Object.keys(profileUpdates).length > 0) {
+        await updateProfile(user, { displayName, photoURL });
+        await updateUserProfileDocument(user.uid, { displayName, photoURL });
+        toast({ title: 'Profile Updated', description: 'Your profile information has been successfully updated.' });
+      } else {
+        toast({ title: 'No Changes', description: 'There were no changes to save.' });
+      }
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     } finally {

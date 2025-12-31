@@ -57,7 +57,8 @@ export default function ImageUpload({ onUpload }: ImageUploadProps) {
         onUpload(secure_url);
         console.log('Image uploaded successfully:', secure_url);
       } else {
-        console.error('Failed to upload image to Cloudinary.');
+        const errorData = await uploadResponse.json();
+        console.error('Failed to upload image to Cloudinary:', errorData);
       }
     } catch (error) {
       console.error('Error uploading image:', error);

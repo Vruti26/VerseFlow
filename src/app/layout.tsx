@@ -5,6 +5,8 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/hooks/use-auth';
 import GlobalHeader from '@/components/layout/global-header';
+import { ThemeProvider } from '@/components/theme-provider';
+import MusicPlayer from '@/components/music-player';
 
 const literata = Literata({
   subsets: ['latin'],
@@ -38,13 +40,21 @@ export default function RootLayout({
           spaceGrotesk.variable
         )}
       >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <AuthProvider>
             <GlobalHeader />
             <main className="flex-1">
               {children}
             </main>
+            <MusicPlayer />
           </AuthProvider>
           <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

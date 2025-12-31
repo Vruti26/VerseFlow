@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Trash2, Loader2, Send, ArrowLeft } from 'lucide-react';
+import { Search, Trash2, Loader2, Send, ArrowLeft, MoreVertical, MessageSquare } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -26,7 +26,6 @@ import { useAuth } from '@/hooks/use-auth';
 // --- Types ---
 interface User {
   id: string;
-  // Update: Allow null | undefined to match Firebase Auth types
   displayName?: string | null;
   email?: string | null;
   photoURL?: string | null; 
@@ -62,32 +61,28 @@ const getInitials = (name: string) => {
 };
 
 // --- Reusable Avatar Component ---
-// FIX: We defined a structural type for 'user' here. 
-// This allows it to accept both the local 'User' interface (which has 'id') 
-// and the Firebase 'currentUser' object (which has 'uid' but no 'id'), 
-// as long as they have the display properties we care about.
 const Avatar = ({ 
     user, 
     size = "md", 
     className = "" 
 }: { 
     user?: { displayName?: string | null; email?: string | null; photoURL?: string | null } | null, 
-    size?: "sm" | "md" | "lg" | "xl", 
+    size?: "xs" | "sm" | "md" | "lg" | "xl", 
     className?: string 
 }) => {
-    // Size mapping
     const sizeClasses = {
+        xs: "w-6 h-6 text-[10px]",
         sm: "w-8 h-8 text-xs",     
         md: "w-10 h-10 text-sm",   
         lg: "w-12 h-12 text-base", 
-        xl: "w-20 h-20 text-2xl"   
+        xl: "w-24 h-24 text-3xl"   
     };
 
-    const containerClass = `${sizeClasses[size]} rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 ${className}`;
+    const containerClass = `${sizeClasses[size]} rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 border border-slate-100 dark:border-slate-700 shadow-sm ${className}`;
 
     if (user?.photoURL) {
         return (
-            <div className={`${containerClass} bg-gray-100`}>
+            <div className={`${containerClass} bg-slate-50 dark:bg-slate-800`}>
                 <img 
                     src={user.photoURL} 
                     alt={user.displayName || "User"} 
@@ -97,9 +92,8 @@ const Avatar = ({
         );
     }
 
-    // Fallback to Initials
     return (
-        <div className={`${containerClass} bg-slate-200 text-slate-600 font-bold`}>
+        <div className={`${containerClass} bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold tracking-wider`}>
             {getInitials(user?.displayName || user?.email || '')}
         </div>
     );
@@ -137,29 +131,34 @@ const ChatListItem = ({
     return (
         <li 
             onClick={onClick} 
-            className={`p-3 cursor-pointer transition-colors border-b border-gray-100 hover:bg-slate-50 ${isSelected ? 'bg-blue-50 hover:bg-blue-50' : ''}`}
+            className={`
+                group p-3 mx-2 my-1 rounded-xl cursor-pointer transition-all duration-200 ease-in-out
+                ${isSelected 
+                    ? 'bg-blue-50 dark:bg-blue-900/20 shadow-sm border border-blue-100 dark:border-blue-900/30' 
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent'
+                }
+            `}
         >
             <div className="flex items-center gap-3">
-                {/* User Avatar */}
                 <Avatar user={chat.otherUser} size="lg" />
 
                 <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline mb-1">
-                        <h3 className="font-semibold text-gray-900 truncate">
+                        <h3 className={`font-semibold truncate transition-colors ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-slate-800 dark:text-slate-200'}`}>
                             {chat.otherUser?.displayName || chat.otherUser?.email}
                         </h3>
                         {chat.updatedAt && (
-                            <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex-shrink-0 ml-2">
                                 {chat.updatedAt.toDate().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             </span>
                         )}
                     </div>
                     <div className="flex justify-between items-center">
-                        <p className={`text-sm truncate pr-2 ${unreadCount > 0 ? 'font-semibold text-gray-800' : 'text-gray-500'}`}>
-                            {chat.lastMessage || <span className="italic">No messages yet</span>}
+                        <p className={`text-xs truncate pr-2 ${unreadCount > 0 ? 'font-bold text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'}`}>
+                            {chat.lastMessage || <span className="italic opacity-70">Draft...</span>}
                         </p>
                         {unreadCount > 0 && (
-                            <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center bg-blue-600 text-white text-[10px] font-bold rounded-full">
+                            <span className="min-w-[18px] h-[18px] px-1.5 flex items-center justify-center bg-blue-600 dark:bg-blue-500 text-white text-[10px] font-bold rounded-full shadow-sm shadow-blue-200 dark:shadow-none">
                                 {unreadCount > 99 ? '99+' : unreadCount}
                             </span>
                         )}
@@ -175,10 +174,7 @@ export default function MessagesPage() {
   const { user: currentUser, loading: authLoading } = useAuth();
   const router = useRouter();
   
-  // UI State
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
-  
-  // Data State
   const [searchQuery, setSearchQuery] = useState('');
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -191,11 +187,9 @@ export default function MessagesPage() {
   const [recentChats, setRecentChats] = useState<Chat[]>([]);
   const [loadingRecents, setLoadingRecents] = useState(true);
   
-  // Typing State
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -396,7 +390,7 @@ export default function MessagesPage() {
   const lastMyMessageId = messages.findLast(m => m.senderId === currentUser?.uid)?.id;
 
   if (authLoading || !currentUser) {
-    return <div className="h-screen w-full flex items-center justify-center bg-gray-50"><Loader2 className="animate-spin text-blue-500 w-8 h-8"/></div>;
+    return <div className="h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950"><Loader2 className="animate-spin text-blue-500 w-8 h-8"/></div>;
   }
 
   const searchResults = searchQuery.trim() === '' ? [] : allUsers.filter(user =>
@@ -405,56 +399,66 @@ export default function MessagesPage() {
   );
 
   return (
-    <div className="flex h-screen w-full bg-white overflow-hidden font-sans text-gray-900">
+    <div className="flex h-screen w-full bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
       
       {/* ---------------- SIDEBAR ---------------- */}
       <aside className={`
-        flex flex-col border-r border-gray-200 bg-white h-full
+        flex flex-col border-r border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md h-full
         ${mobileView === 'list' ? 'w-full' : 'hidden'} 
-        md:flex md:w-80 lg:w-96 flex-shrink-0 z-10
+        md:flex md:w-80 lg:w-96 flex-shrink-0 z-10 transition-all duration-300
       `}>
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-800">Messages</h1>
-            
-            {/* Current User Profile Pic */}
-            <Avatar user={currentUser} size="sm" />
+        {/* Sidebar Header */}
+        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
+            <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">Messages</h1>
+            <div className="relative group cursor-pointer">
+                <Avatar user={currentUser} size="sm" />
+                <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+            </div>
         </div>
 
-        <div className="px-4 py-3">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        {/* Search Bar */}
+        <div className="px-4 py-4">
+            <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 w-4 h-4 transition-colors group-focus-within:text-blue-500" />
                 <input
                     type="text"
-                    placeholder="Search people..."
-                    className="w-full pl-9 pr-4 py-2 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
+                    placeholder="Search conversations..."
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 transition-all outline-none"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        {/* List Content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-2">
             {loadingUsers || loadingRecents ? (
-                <div className="flex justify-center py-8"><Loader2 className="animate-spin text-blue-500 w-6 h-6" /></div>
+                <div className="flex flex-col items-center justify-center h-40 gap-3">
+                    <Loader2 className="animate-spin text-blue-500 w-6 h-6" />
+                    <span className="text-xs text-slate-400 dark:text-slate-500">Loading chats...</span>
+                </div>
             ) : searchQuery ? (
-                <div>
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-2">Found Users</h3>
+                <div className="animate-in fade-in duration-300">
+                    <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-4 py-2 mt-2">Found Users</h3>
                     <ul>
                         {searchResults.map(user => (
-                            <li key={user.id} onClick={() => handleSelectUser(user)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                            <li key={user.id} onClick={() => handleSelectUser(user)} className="group flex items-center gap-3 px-4 py-3 mx-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
                                 <Avatar user={user} size="md" />
-                                <div className="text-sm font-medium">{user.displayName || user.email}</div>
+                                <div className="text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{user.displayName || user.email}</div>
                             </li>
                         ))}
-                        {searchResults.length === 0 && <p className="text-center text-gray-400 text-sm py-4">No users found</p>}
+                        {searchResults.length === 0 && <p className="text-center text-slate-400 dark:text-slate-500 text-sm py-8">No users found</p>}
                     </ul>
                 </div>
             ) : (
-                <ul>
+                <ul className="pb-4 animate-in fade-in duration-300">
                     {recentChats.length === 0 ? (
-                         <div className="flex flex-col items-center justify-center h-64 text-gray-400 text-center px-6">
-                            <p className="mb-2">No conversations yet.</p>
-                            <p className="text-sm">Search for a user to start chatting.</p>
+                         <div className="flex flex-col items-center justify-center h-64 text-slate-400 dark:text-slate-500 text-center px-6">
+                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                                <MessageSquare className="w-8 h-8 text-slate-300 dark:text-slate-600"/>
+                            </div>
+                            <p className="mb-1 font-medium text-slate-600 dark:text-slate-400">No chats yet</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 max-w-[180px]">Search for a user above to start a conversation.</p>
                          </div>
                     ) : (
                         recentChats.map(chat => (
@@ -474,48 +478,50 @@ export default function MessagesPage() {
 
       {/* ---------------- MAIN CHAT AREA ---------------- */}
       <main className={`
-        flex flex-col h-full relative bg-slate-50
+        flex flex-col h-full relative bg-white dark:bg-slate-950
         ${mobileView === 'chat' ? 'w-full fixed inset-0 z-20' : 'hidden'} 
         md:flex md:static md:flex-1
       `}>
         {selectedUser ? (
             <>
                 {/* Chat Header */}
-                <header className="h-16 flex items-center justify-between px-4 bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
-                    <div className="flex items-center gap-3">
-                        <button onClick={handleBackToList} className="md:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full text-gray-600">
+                <header className="h-[73px] flex items-center justify-between px-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 sticky top-0 z-30 transition-all">
+                    <div className="flex items-center gap-4">
+                        <button onClick={handleBackToList} className="md:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-600 dark:text-slate-400 transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         
-                        {/* Selected User Header Avatar */}
-                        <Avatar user={selectedUser} size="md" />
+                        <div className="relative">
+                            <Avatar user={selectedUser} size="md" />
+                        </div>
 
-                        <div className="flex flex-col">
-                            <h2 className="text-sm font-bold text-gray-800">{selectedUser.displayName || selectedUser.email}</h2>
+                        <div className="flex flex-col justify-center">
+                            {/* Changed to font-medium */}
+                            <h2 className="text-sm font-medium text-slate-800 dark:text-slate-100 leading-tight">{selectedUser.displayName || selectedUser.email}</h2>
+                            {/* Only show if typing, otherwise empty */}
                             {isTyping && (
-                                <span className="text-xs text-blue-500 font-medium animate-pulse">Typing...</span>
+                                <span className="text-[10px] text-blue-500 dark:text-blue-400 font-bold animate-pulse">Typing...</span>
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-1 text-gray-400">
-                        <button onClick={handleDeleteConversation} disabled={isDeleting} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors">
+                    <div className="flex items-center gap-1">
+                        <button onClick={handleDeleteConversation} disabled={isDeleting} className="p-2.5 text-slate-400 hover:bg-red-50 hover:text-red-500 dark:text-slate-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-all duration-200" title="Delete conversation">
                             {isDeleting ? <Loader2 className="w-5 h-5 animate-spin"/> : <Trash2 className="w-5 h-5"/>}
                         </button>
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto p-4 bg-slate-50 custom-scrollbar" ref={scrollAreaRef}>
+                {/* Messages Container */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/50 dark:bg-slate-950 custom-scrollbar scroll-smooth" ref={scrollAreaRef}>
                     {loadingMessages ? (
                         <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 text-blue-500 animate-spin"/></div>
                     ) : (
                         <div className="flex flex-col justify-end min-h-full pb-2">
-                             {/* Chat Intro / Profile View */}
-                             <div className="text-center py-10">
-                                <div className="mx-auto w-fit mb-3">
-                                    <Avatar user={selectedUser} size="xl" />
-                                </div>
-                                <h3 className="text-gray-900 font-medium">You're chatting with {selectedUser.displayName}</h3>
-                                <p className="text-sm text-gray-500 mt-1">Say hi to start the conversation!</p>
+                             {/* Profile Intro */}
+                             <div className="flex flex-col items-center justify-center py-12 opacity-80">
+                                <Avatar user={selectedUser} size="xl" className="mb-4 shadow-md" />
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{selectedUser.displayName}</h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">This is the beginning of your conversation.</p>
                              </div>
 
                              {messages.map((msg, index) => {
@@ -527,33 +533,38 @@ export default function MessagesPage() {
                                 const showDate = currentDate !== prevDate;
 
                                 return (
-                                    <div key={msg.id} className="mb-4">
+                                    <div key={msg.id} className="animate-in slide-in-from-bottom-2 duration-300 fade-in">
                                         {showDate && (
-                                            <div className="flex justify-center mb-6 mt-2">
-                                                <span className="text-[11px] bg-gray-200 text-gray-600 px-3 py-1 rounded-full font-medium shadow-sm">
+                                            <div className="flex justify-center my-6">
+                                                <span className="text-[10px] bg-slate-200/60 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 py-1 rounded-full font-semibold uppercase tracking-wider">
                                                     {currentDate}
                                                 </span>
                                             </div>
                                         )}
 
-                                        <div className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`flex flex-col max-w-[75%] md:max-w-[60%] ${isMe ? 'items-end' : 'items-start'}`}>
+                                        <div className={`flex w-full mb-1 group ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`flex flex-col max-w-[75%] md:max-w-[65%] min-w-0 ${isMe ? 'items-end' : 'items-start'}`}>
                                                 <div 
-                                                    className={`group relative px-4 py-2 rounded-2xl shadow-sm text-sm break-words
-                                                    ${isMe 
-                                                        ? 'bg-blue-600 text-white rounded-br-none' 
-                                                        : 'bg-white text-gray-800 rounded-bl-none border border-gray-100'
-                                                    }`}
+                                                    className={`
+                                                        relative px-5 py-3 rounded-2xl shadow-sm text-[15px] leading-relaxed 
+                                                        break-all whitespace-pre-wrap w-fit transition-all duration-200
+                                                        ${isMe 
+                                                            ? 'bg-blue-600 text-white rounded-br-none border border-transparent' 
+                                                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 rounded-bl-none border border-slate-100 dark:border-slate-700' 
+                                                        }
+                                                    `}
                                                 >
                                                     <p>{msg.text}</p>
-                                                    <div className={`text-[10px] mt-1 text-right ${isMe ? 'text-blue-200' : 'text-gray-400'}`}>
+                                                    <div className={`text-[10px] mt-1.5 text-right font-medium opacity-70 ${isMe ? 'text-blue-100' : 'text-slate-400 dark:text-slate-500'}`}>
                                                         {msg.timestamp ? formatTime(msg.timestamp.toDate()) : '...'}
                                                     </div>
 
+                                                    {/* Trash Button - Reintegrated inside Bubble area */}
                                                     {isMe && (
                                                         <button 
                                                             onClick={() => handleDeleteMessage(msg.id)}
-                                                            className="absolute -left-8 top-1/2 -translate-y-1/2 p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            className="absolute -left-12 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:scale-110 hover:bg-red-500 hover:text-white hover:border-red-500 dark:hover:bg-red-500 dark:hover:text-white shadow-sm"
+                                                            title="Delete message"
                                                         >
                                                             <Trash2 size={14} />
                                                         </button>
@@ -561,7 +572,7 @@ export default function MessagesPage() {
                                                 </div>
                                                 
                                                 {showSeen && (
-                                                    <span className="text-[10px] text-gray-400 font-medium mt-1 mr-1 transition-all">
+                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-1 mr-1 animate-in fade-in duration-500">
                                                         Seen
                                                     </span>
                                                 )}
@@ -571,12 +582,13 @@ export default function MessagesPage() {
                                 );
                              })}
 
+                             {/* Typing Indicator Bubble */}
                              {isTyping && (
-                                <div className="flex justify-start mb-4">
-                                    <div className="bg-white border border-gray-100 px-4 py-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-1">
-                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                                <div className="flex justify-start mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 px-4 py-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-1">
+                                        <div className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                        <div className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"></div>
                                     </div>
                                 </div>
                              )}
@@ -586,13 +598,18 @@ export default function MessagesPage() {
                     )}
                 </div>
 
-                <footer className="bg-white p-4 border-t border-gray-200 flex-shrink-0">
-                    <div className="flex items-center gap-2 max-w-4xl mx-auto">
+                {/* Input Area */}
+                <footer className="bg-white dark:bg-slate-900 px-6 py-4 border-t border-slate-100 dark:border-slate-800 sticky bottom-0 z-30">
+                    <div className="flex items-end gap-2 max-w-4xl mx-auto">
+                        <button className="p-3 text-slate-400 hover:bg-slate-50 hover:text-blue-500 dark:hover:bg-slate-800 dark:hover:text-blue-400 rounded-full transition-colors mb-0.5">
+                            <MoreVertical className="w-5 h-5 rotate-90" />
+                        </button>
+
                         <div className="flex-1 relative">
                             <input
                                 type="text"
-                                placeholder="Type a message..."
-                                className="w-full pl-5 pr-12 py-3 bg-gray-100 text-gray-900 border-none rounded-full focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
+                                placeholder="Type your message..."
+                                className="w-full pl-6 pr-12 py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-[24px] focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/10 focus:bg-white dark:focus:bg-slate-900 border border-transparent focus:border-blue-200 dark:focus:border-blue-900 transition-all outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 value={newMessage}
                                 onChange={handleInputChange}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
@@ -600,25 +617,32 @@ export default function MessagesPage() {
                             <button 
                                 onClick={handleSendMessage}
                                 disabled={!newMessage.trim()} 
-                                className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full transition-colors flex items-center justify-center
-                                ${newMessage.trim() 
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' 
-                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                }`}
+                                className={`
+                                    absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full transition-all duration-200 flex items-center justify-center
+                                    ${newMessage.trim() 
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-500 shadow-md hover:scale-105' 
+                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                                    }
+                                `}
                             >
-                                <Send className="w-4 h-4" />
+                                <Send className="w-4 h-4 ml-0.5" />
                             </button>
                         </div>
                     </div>
                 </footer>
             </>
         ) : (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <Send className="w-10 h-10 text-gray-300 ml-1" />
+            // Empty State
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-950/50 relative overflow-hidden">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-100/50 dark:bg-blue-900/10 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+                
+                <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 duration-500">
+                    <div className="w-28 h-28 bg-white dark:bg-slate-900 shadow-lg rounded-full flex items-center justify-center mb-6 ring-8 ring-slate-50 dark:ring-slate-800/50">
+                        <Send className="w-12 h-12 text-blue-500 dark:text-blue-400 ml-1.5" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Your Messages</h3>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-xs text-center leading-relaxed">Select a conversation from the sidebar or start a new one to get chatting.</p>
                 </div>
-                <h3 className="text-lg font-medium text-gray-600">Your Messages</h3>
-                <p className="text-sm text-gray-400 mt-2">Send photos and private messages to a friend.</p>
             </div>
         )}
       </main>

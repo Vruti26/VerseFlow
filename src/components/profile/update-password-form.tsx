@@ -32,6 +32,7 @@ export default function UpdatePasswordForm() {
       await updatePassword(user, newPassword);
 
       toast({
+        variant: 'success',
         title: 'Success',
         description: 'Your password has been updated successfully.',
       });
