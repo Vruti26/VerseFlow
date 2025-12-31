@@ -25,6 +25,16 @@ export interface UserProfile {
     displayName: string;
     email: string;
     photoURL?: string;
+    followers?: string[];
+    following?: string[];
+    createdAt: Timestamp;
+}
+
+export interface User {
+    id: string;
+    displayName: string;
+    email: string;
+    photoURL?: string;
 }
 
 export interface Report {

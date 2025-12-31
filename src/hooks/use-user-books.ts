@@ -3,30 +3,27 @@
 import useSWR from 'swr';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Book } from '@/lib/types';
 
-// The fetcher function is responsible for getting the data.
 const fetcher = async ([, userId]: [string, string]): Promise<Book[]> => {
-  if (!userId) {
-    return [];
-  }
+  if (!userId) return [];
 
-  const q = query(collection(db, 'books'), where('authorId', '==', userId));
+  const q = query(
+    collection(db, 'books'), 
+    where('authorId', '==', userId), 
+    orderBy('updatedAt', 'desc')
+  );
+
   const querySnapshot = await getDocs(q);
-  const books: Book[] = [];
-  querySnapshot.forEach(doc => {
-    books.push({ id: doc.id, ...doc.data() } as Book);
-  });
-
-  return books;
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book));
 };
 
-export function useUserBooks() {
+export function useUserBooks(userId?: string) {
   const { user } = useAuth();
+  const id = userId || user?.uid;
 
-  // useSWR will cache the data and automatically re-fetch it in the background.
-  const { data, error, isLoading, mutate } = useSWR(user ? ['user-books', user.uid] : null, fetcher);
+  const { data, error, isLoading, mutate } = useSWR(id ? ['user-books', id] : null, fetcher);
 
   return {
     books: data,

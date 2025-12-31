@@ -51,11 +51,10 @@ export default function LoginPage() {
       
       {/* 1. Left Column: Branding / Visuals */}
       <div className="hidden bg-muted lg:block relative h-full overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900" />
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20">
-            <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-white blur-3xl" />
-            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-purple-500 blur-[100px]" />
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-900 via-purple-900 to-indigo-900 opacity-90" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+
+        
 
         <div className="relative z-10 flex flex-col justify-between h-full p-12 text-white">
             <div className="flex items-center gap-2 text-lg font-bold">

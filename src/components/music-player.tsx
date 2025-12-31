@@ -1,21 +1,20 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Draggable from 'react-draggable';
 import { Music, Pause } from 'lucide-react';
 
-// --- CONFIGURATION ---
-// You can replace this URL with your actual music file
-const MUSIC_URL = '/music.mp3'; 
+const MUSIC_URL = '/music.mp3';
 
 const MusicPlayer = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const nodeRef = useRef(null);
 
-  // Create a single Audio object and reuse it
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio(MUSIC_URL);
-      audioRef.current.loop = true; // Loop the music
+      audioRef.current.loop = true;
     }
   }, []);
 
@@ -31,27 +30,27 @@ const MusicPlayer = () => {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-50">
-      <button
-        onClick={togglePlay}
-        className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg
-          ${isPlaying 
-            ? 'bg-primary text-primary-foreground scale-105' 
-            : 'bg-card text-card-foreground border hover:scale-105'
-          }`}
-        aria-label={isPlaying ? 'Pause music' : 'Play music'}
-      >
-        {/* Pulsing animation when playing */}
-        {isPlaying && (
-          <div className="absolute inset-0 rounded-full bg-primary opacity-50 animate-pulse"></div>
-        )}
+    <Draggable nodeRef={nodeRef}>
+      <div ref={nodeRef} className="fixed bottom-5 right-5 z-50 cursor-move">
+        <button
+          onClick={togglePlay}
+          className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg
+            ${isPlaying
+              ? 'bg-primary text-primary-foreground scale-105'
+              : 'bg-card text-card-foreground border hover:scale-105'
+            }`}
+          aria-label={isPlaying ? 'Pause music' : 'Play music'}
+        >
+          {isPlaying && (
+            <div className="absolute inset-0 rounded-full bg-primary opacity-50 animate-pulse"></div>
+          )}
 
-        {/* Icon */}
-        <div className="relative z-10">
-          {isPlaying ? <Pause size={24} /> : <Music size={24} />}
-        </div>
-      </button>
-    </div>
+          <div className="relative z-10">
+            {isPlaying ? <Pause size={24} /> : <Music size={24} />}
+          </div>
+        </button>
+      </div>
+    </Draggable>
   );
 };
 

@@ -30,6 +30,12 @@ export default function WritePage() {
       return;
     }
 
+    if (!user.emailVerified) {
+        toast({ variant: 'destructive', title: 'Email Not Verified', description: 'Please verify your email before creating a book.' });
+        setIsCreating(false);
+        return;
+    }
+
     if (!title) {
         toast({ variant: 'destructive', title: 'Title is required', description: 'Please enter a title for your book.' });
         setIsCreating(false);

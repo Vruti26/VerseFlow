@@ -1,10 +1,11 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onIdTokenChanged, User, sendEmailVerification } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 type AuthContextType = {
   user: User | null;
@@ -19,33 +20,88 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
-        // User is signed in, check if a document exists for them in the users collection
+        // If user is new (first sign-in) and email is not verified, send verification email
+        if (user.metadata.creationTime === user.metadata.lastSignInTime && !user.emailVerified) {
+            try {
+                await sendEmailVerification(user);
+            } catch (error) {
+                console.error("Error sending verification email automatically:", error);
+            }
+        }
+
+        // User is signed in, manage their document in the users collection
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
-        
+        const usersRef = collection(db, 'users');
+
         if (!userDocSnap.exists()) {
           // If the document doesn't exist, create it.
+          const newDisplayName = user.displayName;
+          let finalDisplayName = 'Anonymous';
+
+          if (newDisplayName && newDisplayName !== 'Anonymous') {
+              const q = query(usersRef, where("displayName", "==", newDisplayName));
+              const querySnapshot = await getDocs(q);
+              if (querySnapshot.empty) {
+                  finalDisplayName = newDisplayName;
+              } else {
+                  toast({
+                      variant: "destructive",
+                      title: "Display Name Taken",
+                      description: `The name "${newDisplayName}" is already in use. Please choose another one in your profile settings.`,
+                  });
+              }
+          }
+
           try {
             await setDoc(userDocRef, {
-              displayName: user.displayName || 'Anonymous',
+              displayName: finalDisplayName,
               photoURL: user.photoURL || '',
               readingList: [], // Initialize with an empty reading list
+              followers: [],
+              following: [],
             });
           } catch (error) {
             console.error("Error creating user document:", error);
           }
+
+        } else {
+          // If document exists and displayName is a placeholder, update it with auth data.
+          const userData = userDocSnap.data();
+          if (userData.displayName === 'Anonymous' && user.displayName && user.displayName !== 'Anonymous') {
+              const q = query(usersRef, where("displayName", "==", user.displayName));
+              const querySnapshot = await getDocs(q);
+
+              if (querySnapshot.empty) {
+                  try {
+                      await updateDoc(userDocRef, { displayName: user.displayName });
+                  } catch (error) {
+                      console.error("Error updating user displayName:", error);
+                  }
+              } else {
+                toast({
+                    variant: "destructive",
+                    title: "Display Name Taken",
+                    description: `The name "${user.displayName}" from your account is already in use. Your name remains "Anonymous". Please set a unique name in your profile settings.`,
+                });
+              }
+          }
         }
+
+        setUser(user);
+      } else {
+        setUser(null);
       }
-      setUser(user);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   if (loading) {
     return (

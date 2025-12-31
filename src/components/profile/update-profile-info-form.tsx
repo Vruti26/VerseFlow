@@ -11,6 +11,8 @@ import ImageUpload from '@/components/ImageUpload';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { updateUserProfileDocument } from '@/lib/update-user-profile';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 // Define the shape of the data passed in
 interface UserProfileData {
@@ -52,10 +54,25 @@ export default function UpdateProfileInfoForm({ initialData }: UpdateProfileInfo
 
     setIsSaving(true);
     try {
+        const newDisplayName = displayName.trim();
+        // Check if display name is taken, only if it has changed
+        if (newDisplayName !== (initialData?.displayName || user?.displayName)) {
+            if (newDisplayName) {
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, where("displayName", "==", newDisplayName));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    toast({ variant: 'destructive', title: 'Display Name Taken', description: `The name "${newDisplayName}" is already in use. Please choose another.` });
+                    setIsSaving(false);
+                    return; // Block the update
+                }
+            }
+        }
+
       // Create an object with the fields to update
       const profileUpdates: { displayName?: string; photoURL?: string } = {};
-      if (displayName !== (user.displayName || '')) {
-        profileUpdates.displayName = displayName;
+      if (newDisplayName !== (user.displayName || '')) {
+        profileUpdates.displayName = newDisplayName;
       }
       if (photoURL !== (user.photoURL || '')) {
         profileUpdates.photoURL = photoURL;
@@ -63,8 +80,8 @@ export default function UpdateProfileInfoForm({ initialData }: UpdateProfileInfo
 
       // Only update if there are changes
       if (Object.keys(profileUpdates).length > 0) {
-        await updateProfile(user, { displayName, photoURL });
-        await updateUserProfileDocument(user.uid, { displayName, photoURL });
+        await updateProfile(user, { displayName: newDisplayName, photoURL });
+        await updateUserProfileDocument(user.uid, { displayName: newDisplayName, photoURL });
         toast({ title: 'Profile Updated', description: 'Your profile information has been successfully updated.' });
       } else {
         toast({ title: 'No Changes', description: 'There were no changes to save.' });

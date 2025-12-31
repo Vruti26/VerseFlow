@@ -59,6 +59,7 @@
     "react": "^19.2.1",
     "react-day-picker": "^9.11.3",
     "react-dom": "^19.2.1",
+    "react-draggable": "^4.5.0",
     "react-hook-form": "^7.54.2",
     "recharts": "^2.15.1",
     "swr": "^2.3.8",

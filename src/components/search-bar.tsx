@@ -3,28 +3,39 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Loader2 } from 'lucide-react';
-import { useBooks } from '@/hooks/use-books'; // We will create this hook
-import { BookCard } from '@/components/book-card';
-import { Book } from '@/lib/types';
+import { useBooks } from '@/hooks/use-books';
+import { useUsers } from '@/hooks/use-users';
+import { Book, User } from '@/lib/types';
+import { SearchResults } from '@/components/search-results';
 
 export function SearchBar() {
-  const { books, isLoading } = useBooks();
+  const { books, isLoading: booksLoading } = useBooks();
+  const { users, isLoading: usersLoading } = useUsers();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
   useEffect(() => {
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
-      const results = books.filter(book => 
+      
+      const bookResults = books.filter(book => 
         book.title.toLowerCase().includes(lowercasedQuery) ||
         (book.author && book.author.toLowerCase().includes(lowercasedQuery)) ||
         (book.tags && book.tags.some(tag => tag.toLowerCase().includes(lowercasedQuery)))
       );
-      setFilteredBooks(results);
+      setFilteredBooks(bookResults);
+
+      const userResults = users.filter(user => 
+        user.displayName.toLowerCase().includes(lowercasedQuery)
+      );
+      setFilteredUsers(userResults);
+
     } else {
       setFilteredBooks(books);
+      setFilteredUsers(users);
     }
-  }, [searchQuery, books]);
+  }, [searchQuery, books, users]);
 
   return (
     <div>
@@ -39,28 +50,17 @@ export function SearchBar() {
         />
       </div>
       
-      <div className="mt-10">
-        <h2 className="font-headline text-3xl font-bold mb-6">{searchQuery ? 'Search Results' : 'Discover Books'}</h2>
-        
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-12 w-12 animate-spin text-primary"/>
-          </div>
-        ) : (
-            filteredBooks.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6">
-                    {filteredBooks.map((book) => (
-                        <BookCard key={book.id} book={book} />
-                    ))}
-                </div>
-             ) : (
-                <div className="text-center py-10 border-2 border-dashed rounded-lg">
-                    <h3 className="text-xl font-semibold">No Results Found</h3>
-                    <p className="text-muted-foreground mt-2">Your search for "{searchQuery}" did not return any books.</p>
-                </div>
-            )
-        )}
-      </div>
+      {booksLoading || usersLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-12 w-12 animate-spin text-primary"/>
+        </div>
+      ) : (
+        <SearchResults 
+          books={filteredBooks} 
+          users={filteredUsers} 
+          searchQuery={searchQuery} 
+        />
+      )}
     </div>
   );
 }
