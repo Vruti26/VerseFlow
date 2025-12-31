@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, setDoc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -115,7 +115,7 @@ export default function BookEditorPage() {
           setBook({ id: snap.id, ...bookData });
           setError(null);
         } else {
-          setError("You don't have permission to edit this book.");
+          setError("You don\'t have permission to edit this book.");
         }
         setLoading(false);
       } else {
@@ -180,11 +180,13 @@ export default function BookEditorPage() {
   };
 
   const handleSaveDraft = async (options: { controlSavingState: boolean, showToast: boolean } = { controlSavingState: true, showToast: true }) => {
-    if (!bookId || !activeChapter) return;
+    if (!bookId || !book) return;
     if (options.controlSavingState) setSaving(true);
     try {
-        const chapterRef = doc(db, 'books', bookId as string, 'chapters', activeChapter.id);
-        await updateDoc(chapterRef, { title: activeChapter.title, content: activeChapter.content });
+        if (activeChapter) {
+            const chapterRef = doc(db, 'books', bookId as string, 'chapters', activeChapter.id);
+            await updateDoc(chapterRef, { title: activeChapter.title, content: activeChapter.content });
+        }
         const bookRef = doc(db, 'books', bookId as string);
         await updateDoc(bookRef, { 
             updatedAt: serverTimestamp(), 
@@ -204,7 +206,7 @@ export default function BookEditorPage() {
   };
 
   useEffect(() => {
-    if (autosave && activeChapter) {
+    if (autosave && book) {
         if (debounceTimeout.current) {
             clearTimeout(debounceTimeout.current);
         }
@@ -217,7 +219,7 @@ export default function BookEditorPage() {
             clearTimeout(debounceTimeout.current);
         }
     };
-  }, [activeChapter?.content, activeChapter?.title, autosave]);
+  }, [book?.title, book?.coverImage, activeChapter?.content, activeChapter?.title, autosave]);
 
   const handlePublish = async () => {
     if (!bookId || !activeChapter) return;
@@ -283,15 +285,32 @@ export default function BookEditorPage() {
   };
 
   const handleDeleteBook = async () => {
-      if (!bookId) return;
-      try {
-          await deleteDoc(doc(db, 'books', bookId as string));
-          toast({ title: 'Book Deleted', description: 'Your book has been permanently removed.' });
-          router.push('/profile');
-      } catch (error) {
-          console.error("Error deleting book:", error);
-          toast({ variant: 'destructive', title: 'Error Deleting Book', description: 'An unexpected error occurred. Please try again.' });
-      }
+    if (!bookId) return;
+    const bookRef = doc(db, 'books', bookId as string);
+    try {
+      const batch = writeBatch(db);
+  
+      // Delete all chapters
+      const chaptersRef = collection(bookRef, 'chapters');
+      const chaptersSnap = await getDocs(chaptersRef);
+      chaptersSnap.forEach(doc => batch.delete(doc.ref));
+  
+      // Delete all reviews
+      const reviewsRef = collection(bookRef, 'reviews');
+      const reviewsSnap = await getDocs(reviewsRef);
+      reviewsSnap.forEach(doc => batch.delete(doc.ref));
+  
+      // Delete the book itself
+      batch.delete(bookRef);
+  
+      await batch.commit();
+  
+      toast({ title: 'Book Deleted', description: 'Your book and all its content have been permanently removed.' });
+      router.push('/profile');
+    } catch (error) {
+      console.error("Error deleting book:", error);
+      toast({ variant: 'destructive', title: 'Error Deleting Book', description: 'An unexpected error occurred. Please try again.' });
+    }
   };
 
   const handleDragEnd = async (event: any) => {
@@ -319,9 +338,7 @@ export default function BookEditorPage() {
     }
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>;
-  }
+
 
   if (error) {
     return <div className="text-center py-20 font-medium text-destructive">{error}</div>;
@@ -344,7 +361,7 @@ export default function BookEditorPage() {
                     <Switch id="autosave-switch" checked={autosave} onCheckedChange={setAutosave} />
                     <Label htmlFor="autosave-switch">Autosave</Label>
                 </div>
-                <Button onClick={() => handleSaveDraft({ controlSavingState: true, showToast: true })} disabled={saving || !activeChapter || autosave} variant="outline">
+                <Button onClick={() => handleSaveDraft({ controlSavingState: true, showToast: true })} disabled={saving || !book || autosave} variant="outline">
                     {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                     Save Draft
                 </Button>
@@ -407,6 +424,7 @@ export default function BookEditorPage() {
                     </CardContent>
                 </Card>
             </div>
+
 
             <div className="lg:col-span-3">
                 {activeChapter ? (

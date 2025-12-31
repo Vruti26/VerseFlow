@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
 import { BookCard } from '@/components/book-card';
 import { Book } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -15,7 +14,7 @@ function EmptyReadingList() {
     return (
         <div className="border-2 border-dashed rounded-lg p-8 text-center mt-8">
             <h3 className="text-xl font-semibold font-headline">Your Reading List is Empty</h3>
-            <p className="text-sm text-muted-foreground mt-2">You haven't added any books to your reading list yet. Browse the library and add some stories!</p>
+            <p className="text-sm text-muted-foreground mt-2">You haven\'t added any books to your reading list yet. Browse the library and add some stories!</p>
             <Button asChild className="mt-4">
                 <Link href="/">Browse Books</Link>
             </Button>
@@ -33,7 +32,6 @@ function NoResults({ searchTerm, clearSearch }: { searchTerm: string, clearSearc
     )
 }
 
-// This is a simplified hook. In a real app, you might want to use SWR or React Query.
 function useReadingList() {
   const { user } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
@@ -102,12 +100,13 @@ export default function ReadingList() {
 
   const handleClearSearch = () => setSearchTerm('');
 
+
   return (
     <div className="space-y-4">
         <div className="flex justify-between items-start">
             <div>
-                <h2 className="text-2xl font-bold font-headline">My Reading List</h2>
-                <p className="text-sm text-muted-foreground">Books you've saved to read later.</p>
+                <h2 className="text-2xl font-bold font-headline">My ReadingList</h2>
+                <p className="text-sm text-muted-foreground">Books you\'ve saved to read later.</p>
             </div>
             {books.length > 0 && (
                 <div className="w-full max-w-xs">
@@ -119,10 +118,6 @@ export default function ReadingList() {
                 </div>
             )}
         </div>
-
-        {isLoading && (
-             <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-        )}
 
         {!isLoading && error && (
             <div className="text-red-500 text-center p-4 border border-red-200 rounded-md">Error loading your reading list. Please try again later.</div>

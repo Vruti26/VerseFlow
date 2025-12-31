@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { 
   Book, 
@@ -23,6 +22,7 @@ import {
   Share2,
   PenTool
 } from 'lucide-react';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 // Components
 import UpdatePasswordForm from '@/components/profile/update-password-form';
@@ -69,9 +69,7 @@ export default function ProfilePage() {
     toast({ title: "Link Copied", description: "Profile link copied to clipboard." });
   };
 
-  if (authLoading || dataLoading) {
-    return <ProfileSkeleton />;
-  }
+
 
   if (!user) return null;
 
@@ -107,7 +105,7 @@ export default function ProfilePage() {
       <div className="container max-w-6xl mx-auto px-4 sm:px-6 relative z-10 -mt-24 pb-20">
         
         {/* 2. Profile Card */}
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-slate-800 p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10">
+        <div className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-slate-800 p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-10">
             
             {/* Avatar Section */}
             <div className="relative -mt-20 md:-mt-28 flex-shrink-0 group">
@@ -141,6 +139,9 @@ export default function ProfilePage() {
                             <Button variant="outline" size="sm" onClick={handleShare} className="rounded-full gap-2">
                                 <Share2 className="w-4 h-4" /> Share
                             </Button>
+                            <div className="hidden md:block">
+                              <ThemeToggleButton />
+                            </div>
                             {/* You could add an 'Edit Profile' button here that switches tab to settings */}
                         </div>
                     </div>
@@ -280,25 +281,6 @@ export default function ProfilePage() {
             </Tabs>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ProfileSkeleton() {
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-        <div className="h-60 md:h-80 w-full bg-slate-200 dark:bg-slate-900 animate-pulse" />
-        <div className="container max-w-6xl mx-auto px-4 -mt-24">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-8 h-48 animate-pulse mb-12" />
-            <div className="grid gap-6">
-                <Skeleton className="h-12 w-full max-w-2xl rounded-xl mx-auto" />
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                    <Skeleton className="h-64 w-full rounded-xl" />
-                    <Skeleton className="h-64 w-full rounded-xl" />
-                    <Skeleton className="h-64 w-full rounded-xl" />
-                </div>
-            </div>
-        </div>
     </div>
   );
 }

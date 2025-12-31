@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, onSnapshot, doc, updateDoc, deleteDoc, query } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, writeBatch, getDocs } from 'firebase/firestore';
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, Loader2 } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import Image from "next/image";
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -51,15 +51,43 @@ export default function AdminBooksPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this book? This action cannot be undone.')) {
-            await deleteDoc(doc(db, 'books', id));
-            toast({ variant: 'destructive', title: 'Deleted', description: 'The book has been permanently deleted.' });
+        if (confirm('Are you sure you want to delete this book and ALL its content? This action cannot be undone.')) {
+            const bookRef = doc(db, 'books', id);
+            try {
+                const batch = writeBatch(db);
+
+                // Delete all chapters in the subcollection
+                const chaptersRef = collection(bookRef, 'chapters');
+                const chaptersSnap = await getDocs(chaptersRef);
+                chaptersSnap.forEach(doc => batch.delete(doc.ref));
+
+                // Delete all reviews in the subcollection
+                const reviewsRef = collection(bookRef, 'reviews');
+                const reviewsSnap = await getDocs(reviewsRef);
+                reviewsSnap.forEach(doc => batch.delete(doc.ref));
+
+                // Delete the book document itself
+                batch.delete(bookRef);
+
+                await batch.commit();
+
+                toast({ 
+                    variant: 'destructive', 
+                    title: 'Book Deleted', 
+                    description: 'The book and all its content have been permanently removed.' 
+                });
+            } catch (error) {
+                console.error("Error deleting book from admin:", error);
+                toast({ 
+                    variant: 'destructive', 
+                    title: 'Error Deleting Book', 
+                    description: 'An unexpected error occurred while deleting the book.' 
+                });
+            }
         }
     };
 
-    if (loading) {
-        return <div className="flex items-center justify-center h-48"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>;
-    }
+    
 
     return (
         <div>

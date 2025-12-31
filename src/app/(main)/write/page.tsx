@@ -71,31 +71,39 @@ export default function WritePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4 md:p-8">
+    // Changed: Removed 'items-center justify-center' to prevent scrolling issues on mobile
+    // Added: 'overflow-x-hidden' to stop horizontal scrollbars from background blobs
+    <div className="min-h-screen bg-background relative overflow-x-hidden flex flex-col py-8 px-4 md:p-8 lg:justify-center">
       
-      {/* 1. Ambient Background Glows */}
-      <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[800px] h-[800px] bg-primary/10 blur-[120px] rounded-full pointer-events-none opacity-50" />
-      <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-500/10 blur-[100px] rounded-full pointer-events-none opacity-40" />
+      {/* 1. Ambient Background Glows (Responsive sizing) */}
+      <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 w-[300px] h-[300px] md:w-[800px] md:h-[800px] bg-primary/10 blur-[80px] md:blur-[120px] rounded-full pointer-events-none opacity-50" />
+      <div className="absolute bottom-0 left-0 translate-y-1/4 -translate-x-1/4 w-[250px] h-[250px] md:w-[600px] md:h-[600px] bg-purple-500/10 blur-[60px] md:blur-[100px] rounded-full pointer-events-none opacity-40" />
 
-      <div className="container max-w-5xl relative z-10 grid lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+      <div className="container max-w-5xl mx-auto relative z-10 grid lg:grid-cols-2 gap-8 lg:gap-24 items-start lg:items-center">
         
         {/* 2. Left Column: Inspirational Text */}
-        <div className="space-y-6 order-2 lg:order-1 animate-in fade-in slide-in-from-left-8 duration-700">
-             <Badge variant="outline" className="px-4 py-1 border-primary/20 text-primary bg-primary/5">
-                <Sparkles className="w-3 h-3 mr-2 fill-primary" />
-                New Project
-             </Badge>
+        {/* Changed order: Shows FIRST on mobile for context, then form below */}
+        <div className="space-y-6 order-1 lg:order-1 animate-in fade-in slide-in-from-left-4 duration-700">
              
-             <h1 className="text-4xl md:text-5xl font-headline font-bold leading-tight">
-                Unleash Your <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">Imagination.</span>
-             </h1>
-             
-             <p className="text-lg text-muted-foreground leading-relaxed max-w-md">
-                Every great story starts with a single idea. Create your book, outline your chapters, and bring your characters to life with our powerful writing tools.
-             </p>
+             {/* Mobile-friendly Header Group */}
+             <div className="space-y-4">
+                 <Badge variant="outline" className="px-3 py-1 border-primary/20 text-primary bg-primary/5 text-xs md:text-sm">
+                    <Sparkles className="w-3 h-3 mr-2 fill-primary" />
+                    New Project
+                 </Badge>
+                 
+                 <h1 className="text-3xl md:text-5xl font-headline font-bold leading-tight">
+                    Unleash Your <br className="hidden md:block"/>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">Imagination.</span>
+                 </h1>
+                 
+                 <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-md">
+                    Every great story starts with a single idea. Begin your journey here.
+                 </p>
+             </div>
 
-             <div className="flex flex-col gap-4 pt-4">
+             {/* Features List - Hidden on very small screens to save space, visible on tablet+ */}
+             <div className="hidden md:flex flex-col gap-4 pt-4">
                 <div className="flex items-center gap-4">
                     <div className="p-2 rounded-full bg-secondary text-primary">
                         <PenTool className="w-5 h-5" />
@@ -117,21 +125,20 @@ export default function WritePage() {
              </div>
         </div>
 
-
         {/* 3. Right Column: The Form Card */}
-        <div className="order-1 lg:order-2 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+        <div className="order-2 lg:order-2 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 w-full">
             <div className="relative">
-                {/* Decorative blob behind card */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur opacity-20" />
+                {/* Decorative blob behind card - visible mostly on desktop */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur opacity-20 hidden md:block" />
                 
-                <Card className="border-border/50 shadow-2xl bg-card/80 backdrop-blur-xl">
-                    <CardContent className="p-8 space-y-8">
+                <Card className="border-border/50 shadow-xl md:shadow-2xl bg-card/80 backdrop-blur-xl">
+                    <CardContent className="p-6 md:p-8 space-y-6 md:space-y-8">
                         
-                        <div className="space-y-2 text-center lg:text-left">
-                            <div className="inline-flex p-3 rounded-xl bg-primary/10 text-primary mb-2">
-                                <Feather className="w-6 h-6" />
+                        <div className="space-y-1 md:space-y-2">
+                            <div className="inline-flex p-2.5 rounded-xl bg-primary/10 text-primary mb-2">
+                                <Feather className="w-5 h-5 md:w-6 md:h-6" />
                             </div>
-                            <h2 className="text-2xl font-bold font-headline">Create New Book</h2>
+                            <h2 className="text-xl md:text-2xl font-bold font-headline">Create New Book</h2>
                             <p className="text-sm text-muted-foreground">Give your story a title to get started.</p>
                         </div>
 
@@ -144,7 +151,8 @@ export default function WritePage() {
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     disabled={isCreating}
-                                    className="h-12 bg-background/50 border-input/60 focus:bg-background transition-all text-lg placeholder:text-muted-foreground/40"
+                                    // Improved mobile input: text-base prevents auto-zoom on iOS
+                                    className="h-11 md:h-12 bg-background/50 border-input/60 focus:bg-background transition-all text-base md:text-lg placeholder:text-muted-foreground/40"
                                 />
                             </div>
 
@@ -157,7 +165,8 @@ export default function WritePage() {
                                     onChange={(e) => setDescription(e.target.value)}
                                     disabled={isCreating}
                                     rows={4}
-                                    className="bg-background/50 border-input/60 focus:bg-background transition-all resize-none placeholder:text-muted-foreground/40"
+                                    // Improved mobile input: text-base
+                                    className="bg-background/50 border-input/60 focus:bg-background transition-all resize-none text-base placeholder:text-muted-foreground/40"
                                 />
                             </div>
 
@@ -165,16 +174,16 @@ export default function WritePage() {
                                 size="lg" 
                                 onClick={handleCreateAndRedirect} 
                                 disabled={isCreating} 
-                                className="w-full h-12 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all"
+                                className="w-full h-11 md:h-12 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all mt-2"
                             >
                                 {isCreating ? (
                                     <>
                                         <Loader2 className="mr-2 h-5 w-5 animate-spin" /> 
-                                        Setting up your studio...
+                                        Creating...
                                     </>
                                 ) : (
                                     <>
-                                        Create & Start Writing <Feather className="ml-2 w-4 h-4" />
+                                        Start Writing <Feather className="ml-2 w-4 h-4" />
                                     </>
                                 )}
                             </Button>
@@ -182,6 +191,11 @@ export default function WritePage() {
 
                     </CardContent>
                 </Card>
+            </div>
+            
+            {/* Mobile-only feature hint to save space above */}
+            <div className="md:hidden flex items-center justify-center gap-2 mt-8 text-xs text-muted-foreground opacity-70">
+                <Sparkles className="w-3 h-3" /> Distraction-free writing environment
             </div>
         </div>
 

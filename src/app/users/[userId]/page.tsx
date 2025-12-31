@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import UserProfileTabs from '@/components/profile/user-profile-tabs';
 
@@ -39,9 +38,7 @@ export default function UserProfilePage() {
     fetchUserProfile();
   }, [userId]);
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary"/></div>;
-  }
+  
 
   if (error) {
     return <div className="text-center py-20 font-medium text-destructive">{error}</div>;
