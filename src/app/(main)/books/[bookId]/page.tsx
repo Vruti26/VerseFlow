@@ -362,7 +362,7 @@ export default function PublicBookPage() {
                  {author && (
                      <div className="flex items-center gap-2 text-muted-foreground">
                          <Avatar className="h-6 w-6"><AvatarImage src={author.photoURL} /></Avatar>
-                         <span>By <Link href={`/users/${author.uid}`} className="underline hover:text-primary">{author.displayName}</Link></span>
+                         <span>By <Link href={user?.uid === author.uid ? '/profile' : `/users/${author.uid}`} className="underline hover:text-primary">{author.displayName}</Link></span>
                      </div>
                  )}
              </div>

@@ -26,7 +26,7 @@ export default function Home() {
         {/* 3. Hero Headline */}
         <h1 className="max-w-4xl text-5xl md:text-7xl font-headline font-extrabold tracking-tight mb-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both delay-100">
           Welcome to the <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-pink-500">
+          <span className="text-transparent isolation-isolate bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-pink-500">
             VerseFlow Library
           </span>
         </h1>
