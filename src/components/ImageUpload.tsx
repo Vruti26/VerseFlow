@@ -1,76 +1,104 @@
-
 'use client';
 
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useState, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface ImageUploadProps {
   onUpload: (url: string) => void;
+  bookId: string;
 }
 
-export default function ImageUpload({ onUpload }: ImageUploadProps) {
+export default function ImageUpload({ onUpload, bookId }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY;
-
-    if (!cloudName || !apiKey) {
-      console.error(
-        'Cloudinary cloud name or API key is not configured.'
-      );
-      setIsUploading(false);
+    if (!['image/png', 'image/jpeg', 'image/gif'].includes(file.type)) {
+      toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload a PNG, JPG, or GIF file.' });
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) { // 4MB limit
+      toast({ variant: 'destructive', title: 'File Too Large', description: 'Please upload an image smaller than 4MB.' });
       return;
     }
 
-    const timestamp = Math.round(new Date().getTime() / 1000);
+    setIsUploading(true);
 
     try {
-      const signatureResponse = await fetch('/api/sign-image', {
+      // 1. Get signature from the server
+      const response = await fetch('/api/sign-image', {
         method: 'POST',
-        body: JSON.stringify({ paramsToSign: { timestamp } }),
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ bookId }),
       });
 
-      const { signature } = await signatureResponse.json();
+      const { signature, timestamp, public_id, cloudName, apiKey } = await response.json();
 
+      if (!response.ok) {
+        throw new Error('Failed to get upload signature.');
+      }
+
+      // 2. Upload to Cloudinary
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('timestamp', timestamp.toString());
-      formData.append('api_key', apiKey);
       formData.append('signature', signature);
+      formData.append('timestamp', timestamp);
+      formData.append('public_id', public_id);
+      formData.append('api_key', apiKey);
 
-      const uploadResponse = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
+      const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
 
-      if (uploadResponse.ok) {
-        const { secure_url } = await uploadResponse.json();
-        onUpload(secure_url);
-        console.log('Image uploaded successfully:', secure_url);
+      const uploadResponse = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await uploadResponse.json();
+      if (uploadResponse.ok && data.secure_url) {
+        onUpload(data.secure_url);
+        toast({ title: 'Success', description: 'Cover image uploaded successfully.' });
       } else {
-        const errorData = await uploadResponse.json();
-        console.error('Failed to upload image to Cloudinary:', errorData);
+        throw new Error(data.error?.message || 'Could not upload the image.');
       }
-    } catch (error) {
-      console.error('Error uploading image:', error);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Upload Failed', description: error.message });
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   return (
-    <div>
-      <input type="file" onChange={handleFileChange} disabled={isUploading} accept="image/png, image/jpeg, image/gif"/>
-      {isUploading && <p>Uploading...</p>}
+    <div className="w-full">
+      <Label htmlFor="file-upload" className="sr-only">Choose file</Label>
+      <div className="flex items-center gap-2">
+        <Input
+          id="file-upload"
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileChange}
+          disabled={isUploading}
+          accept="image/png, image/jpeg, image/gif"
+          className="flex-grow file:mr-2 file:border-0 file:bg-transparent file:text-sm file:font-medium"
+        />
+        <Button onClick={() => fileInputRef.current?.click()} disabled={isUploading} variant="outline" size="icon" className="flex-shrink-0">
+          {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          <span className="sr-only">Upload</span>
+        </Button>
+      </div>
+      {isUploading && <p className="text-xs text-muted-foreground mt-2">Uploading, please wait...</p>}
     </div>
   );
 }

@@ -19,25 +19,19 @@ import { BookCopy, LogOut, User, Feather, Info, MessageSquare, LogIn, UserPlus, 
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'; // Import the new hook
 
 function getInitials(email: string | null | undefined): string {
   if (!email) return '';
   return email.charAt(0).toUpperCase();
 }
 
-const navLinks = [
-  { href: '/', label: 'Discover', icon: BookCopy },
-  { href: '/users', label: 'Authors', icon: Users },
-  { href: '/write', label: 'Write', icon: Feather },
-  { href: '/messages', label: 'Messages', icon: MessageSquare },
-  { href: '/about', label: 'About', icon: Info },
-];
-
 export default function GlobalHeader() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
+  const totalUnread = useUnreadMessages(); // Use the hook
 
   const handleLogout = async () => {
     try {
@@ -48,6 +42,19 @@ export default function GlobalHeader() {
       toast({ variant: 'destructive', title: 'Logout Failed', description: error.message });
     }
   };
+
+  const navLinks = [
+    { href: '/', label: 'Discover', icon: BookCopy },
+    { href: '/users', label: 'Authors', icon: Users },
+    { href: '/write', label: 'Write', icon: Feather },
+    {
+      href: '/messages',
+      label: 'Messages',
+      icon: MessageSquare,
+      notification: totalUnread > 0,
+    },
+    { href: '/about', label: 'About', icon: Info },
+  ];
 
   const renderDesktopMenu = () => (
     <div className="hidden  md:flex items-center space-x-2">
@@ -130,7 +137,10 @@ export default function GlobalHeader() {
                         {navLinks.map(link => (
                             <DropdownMenuItem key={link.href} onClick={() => router.push(link.href)}>
                                 <link.icon className="mr-2 h-4 w-4" />
-                                <span>{link.label}</span>
+                                <span className="flex items-center">
+                                  {link.label}
+                                  {link.notification && <span className="ml-2 h-2 w-2 rounded-full bg-green-500"></span>}
+                                </span>
                             </DropdownMenuItem>
                         ))}
                     </DropdownMenuGroup>
@@ -169,8 +179,11 @@ export default function GlobalHeader() {
         
         <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 text-sm font-medium">
           {navLinks.map(link => (
-            <Link key={link.href} href={link.href} className="transition-colors hover:text-primary">
+            <Link key={link.href} href={link.href} className="transition-colors hover:text-primary relative">
               {link.label}
+              {link.notification && (
+                <span className="absolute top-0 right-0 -mt-1 -mr-1 h-2 w-2 rounded-full bg-green-500"></span>
+              )}
             </Link>
           ))}
         </nav>

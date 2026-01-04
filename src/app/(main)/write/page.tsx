@@ -20,7 +20,7 @@ export default function WritePage() {
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [synopsis, setSynopsis] = useState('');
 
   const handleCreateAndRedirect = async () => {
     setIsCreating(true);
@@ -49,7 +49,7 @@ export default function WritePage() {
         await setDoc(newBookRef, {
             id: newBookId,
             title,
-            description,
+            synopsis,
             authorId: user.uid,
             author: user.displayName || 'Anonymous',
             status: 'draft',
@@ -156,20 +156,7 @@ export default function WritePage() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="description" className="text-sm font-medium ml-1">Synopsis (Optional)</Label>
-                                <Textarea 
-                                    id="description"
-                                    placeholder="What is your story about?"
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    disabled={isCreating}
-                                    rows={4}
-                                    // Improved mobile input: text-base
-                                    className="bg-background/50 border-input/60 focus:bg-background transition-all resize-none text-base placeholder:text-muted-foreground/40"
-                                />
-                            </div>
-
+                        
                             <Button 
                                 size="lg" 
                                 onClick={handleCreateAndRedirect} 
