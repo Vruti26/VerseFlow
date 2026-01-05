@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 
 interface ImageUploadProps {
   onUpload: (url: string) => void;
-  bookId: string;
+  bookId?: string;
 }
 
 export default function ImageUpload({ onUpload, bookId }: ImageUploadProps) {
@@ -39,7 +39,7 @@ export default function ImageUpload({ onUpload, bookId }: ImageUploadProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ bookId }),
+        body: JSON.stringify(bookId ? { bookId } : {}),
       });
 
       const { signature, timestamp, public_id, cloudName, apiKey } = await response.json();
