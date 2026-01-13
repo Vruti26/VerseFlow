@@ -1,5 +1,5 @@
 
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, writeBatch, query, collection, where, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 
 /**
@@ -10,5 +10,23 @@ import { db } from './firebase';
  */
 export const updateUserProfileDocument = async (userId: string, data: { displayName?: string | null; photoURL?: string | null; }) => {
   const userDocRef = doc(db, 'users', userId);
-  await setDoc(userDocRef, data, { merge: true });
+  
+  const batch = writeBatch(db);
+
+  batch.set(userDocRef, data, { merge: true });
+
+  if (data.displayName) {
+    const booksQuery = query(collection(db, 'books'), where('authorId', '==', userId));
+    try {
+      const querySnapshot = await getDocs(booksQuery);
+      querySnapshot.forEach(doc => {
+        batch.update(doc.ref, { author: data.displayName });
+      });
+    } catch (error) {
+      console.error("Error updating books for user: ", error);
+      throw new Error('Failed to update author names in books.');
+    }
+  }
+  
+  await batch.commit();
 };

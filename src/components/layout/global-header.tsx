@@ -45,7 +45,7 @@ export default function GlobalHeader() {
 
   const navLinks = [
     { href: '/', label: 'Discover', icon: BookCopy },
-    { href: '/users', label: 'Authors', icon: Users },
+    { href: '/users', label: 'Community', icon: Users },
     { href: '/write', label: 'Write', icon: Feather },
     {
       href: '/messages',

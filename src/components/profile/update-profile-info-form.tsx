@@ -113,7 +113,7 @@ export default function UpdateProfileInfoForm({ initialData }: UpdateProfileInfo
                         />
                     </div>
                 )}
-                <ImageUpload onUpload={setPhotoURL} />
+                <ImageUpload onUpload={setPhotoURL} uploadType="profilePhoto" />
            </div>
           <div className="space-y-2">
             <Label htmlFor="displayName">Display Name</Label>

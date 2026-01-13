@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Draggable, { DraggableEvent, DraggableData } from 'react-draggable';
 import { Music, Pause } from 'lucide-react';
 
-const MUSIC_URL = '/music.mp3';
+const MUSIC_URL = '/music2.mp3';
 
 // Create a single audio instance to be reused.
 let audio: HTMLAudioElement | null = null;

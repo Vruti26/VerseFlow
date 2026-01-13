@@ -436,7 +436,7 @@ export default function BookEditorPage() {
                                             <Image src={book.coverImage} alt="Book Cover" layout="fill" objectFit="cover"/>
                                         </div>
                                     )}
-                                    <ImageUpload onUpload={handleCoverImageUpload} bookId={bookId as string} />
+                                    <ImageUpload onUpload={handleCoverImageUpload} bookId={bookId as string} uploadType="bookCover" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="text-xs text-muted-foreground uppercase tracking-wide">Synopsis</Label>

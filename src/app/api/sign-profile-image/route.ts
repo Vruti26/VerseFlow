@@ -50,15 +50,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid ID token' }, { status: 401 });
   }
 
-  const { bookId } = await request.json();
-
-  if (!bookId) {
-    return NextResponse.json({ error: 'bookId is required' }, { status: 400 });
-  }
+  const userId = decodedUser.uid;
 
   try {
     const timestamp = Math.round(new Date().getTime() / 1000);
-    const public_id = `books/${bookId}/cover_${timestamp}`;
+    const public_id = `users/${userId}/profile_${timestamp}`;
 
     const signature = cloudinary.utils.api_sign_request(
       {

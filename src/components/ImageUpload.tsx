@@ -1,6 +1,7 @@
 'use client';
 
 import { ChangeEvent, useState, useRef } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,15 +10,22 @@ import { Label } from '@/components/ui/label';
 
 interface ImageUploadProps {
   onUpload: (url: string) => void;
+  uploadType: 'bookCover' | 'profilePhoto';
   bookId?: string;
 }
 
-export default function ImageUpload({ onUpload, bookId }: ImageUploadProps) {
+export default function ImageUpload({ onUpload, uploadType, bookId }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to upload an image.' });
+      return;
+    }
+
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -33,22 +41,31 @@ export default function ImageUpload({ onUpload, bookId }: ImageUploadProps) {
     setIsUploading(true);
 
     try {
-      // 1. Get signature from the server
-      const response = await fetch('/api/sign-image', {
+      const endpoint = uploadType === 'bookCover' ? '/api/sign-image' : '/api/sign-profile-image';
+      const body = uploadType === 'bookCover' ? JSON.stringify({ bookId }) : JSON.stringify({});
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      if (user) {
+        const token = await user.getIdToken();
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookId ? { bookId } : {}),
+        headers,
+        body,
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get upload signature.');
+      }
 
       const { signature, timestamp, public_id, cloudName, apiKey } = await response.json();
 
-      if (!response.ok) {
-        throw new Error('Failed to get upload signature.');
-      }
-
-      // 2. Upload to Cloudinary
       const formData = new FormData();
       formData.append('file', file);
       formData.append('signature', signature);
@@ -66,7 +83,7 @@ export default function ImageUpload({ onUpload, bookId }: ImageUploadProps) {
       const data = await uploadResponse.json();
       if (uploadResponse.ok && data.secure_url) {
         onUpload(data.secure_url);
-        toast({ title: 'Success', description: 'Cover image uploaded successfully.' });
+        toast({ title: 'Success', description: 'Image uploaded successfully.' });
       } else {
         throw new Error(data.error?.message || 'Could not upload the image.');
       }

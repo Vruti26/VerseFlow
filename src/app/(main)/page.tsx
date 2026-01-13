@@ -1,68 +1,78 @@
 'use client';
 
-import { SearchBar } from '@/components/search-bar';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { SearchBar } from '@/components/search-bar'; 
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Sparkles, TrendingUp } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
+import gsap from 'gsap';
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(true);
+  const heroTextRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (isLoading) return;
+    gsap.fromTo(heroTextRef.current, 
+      { y: 30, opacity: 0 },
+      { y: 0, opacity: 1, duration: 1, ease: "power3.out" }
+    );
+  }, [isLoading]);
+
+  if (isLoading) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground animate-pulse">Loading VerseFlow...</p>
+            </div>
+        </div>
+    );
+  }
+
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center overflow-hidden bg-background">
+    <div className="relative min-h-[150vh] flex flex-col items-center justify-start overflow-hidden bg-background">
       
-      {/* 1. Background Decor (Glow Effects) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-primary/20 blur-[120px] rounded-full opacity-50 pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-[800px] h-[600px] bg-purple-500/10 blur-[100px] rounded-full opacity-30 pointer-events-none" />
+      {/* Background Gradient */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[140vw] h-[80vh] bg-gradient-to-b from-primary/10 via-purple-500/5 to-transparent blur-[120px] rounded-full opacity-60 dark:opacity-40" />
+      </div>
 
-      {/* 2. Main Content Container */}
-      <main className="container relative z-10 mx-auto px-4 py-16 flex flex-col items-center text-center">
+      <main className="container relative z-10 mx-auto px-4 pt-24 md:pt-32 flex flex-col items-center text-center">
         
-        {/* Badge / Pill */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-           <Badge variant="secondary" className="px-4 py-1.5 text-sm rounded-full mb-6 border border-primary/20 bg-primary/5 text-primary">
-              <Sparkles className="w-3 h-3 mr-2 fill-primary" />
-              Discover a universe of stories
-           </Badge>
-        </div>
-
-        {/* 3. Hero Headline */}
-        <h1 className="max-w-4xl text-5xl md:text-7xl font-headline font-extrabold tracking-tight mb-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both delay-100">
-          Welcome to the <br />
-          <span className="text-transparent isolation-isolate bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-pink-500">
-            VerseFlow Library
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p className="max-w-2xl text-l md:text-xl text-muted-foreground mb-10 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both delay-200">
-         
-        </p>
-
-        {/* 4. Search Area */}
-        <div className="w-full  animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both delay-300">
-          <div className="p-2 bg-background/60 backdrop-blur-md border rounded-2xl shadow-2xl ring-1 ring-white/10 dark:ring-white/5">
-             <SearchBar />
+        {/* Hero Section */}
+        <div ref={heroTextRef} className="opacity-0 mb-20">
+          <div className="mb-6 flex justify-center">
+             <Badge variant="outline" className="px-4 py-1.5 text-sm rounded-full border-primary/20 bg-primary/5 text-primary backdrop-blur-md shadow-sm">
+               <BookOpen className="w-3.5 h-3.5 mr-2 fill-current" />
+               Discover
+             </Badge>
           </div>
-          <br></br>
-          
-          {/* Quick Links / Popular Genres */}
-          {/* <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm text-muted-foreground">
-             <span className="flex items-center"><TrendingUp className="w-3 h-3 mr-1" /> Trending:</span>
-             {['Fantasy', 'Sci-Fi', 'Romance', 'Mystery', 'Thriller'].map((genre) => (
-                <span 
-                  key={genre} 
-                  className="cursor-pointer hover:text-primary underline decoration-dotted underline-offset-4 transition-colors"
-                >
-                  {genre}
-                </span>
-             ))}
-          </div> */}
+
+          <h1 className="max-w-6xl mx-auto text-5xl sm:text-6xl md:text-9xl font-headline font-black tracking-tighter leading-[1.1] md:leading-[1] mb-6 text-foreground">
+            Welcome to <br className="md:hidden" />
+            <span className="relative inline-block md:mt-2">
+              <span className="relative text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-pink-600">
+                VerseFlow
+              </span>
+              <span className="absolute -bottom-2 md:-bottom-4 left-0 w-full h-[20px] md:h-[30px] bg-primary/20 blur-2xl rounded-full" />
+            </span>
+          </h1>
+
+          <p className="max-w-2xl mx-auto text-lg md:text-2xl text-muted-foreground leading-relaxed font-light">
+            Read, write, and connect. The platform where your imagination takes flight.
+          </p>
         </div>
 
-      </main>
+        {/* The SearchBar Component */}
+        <SearchBar />
 
-      {/* 5. Decorative Floating Icons (Optional polish) */}
-      <BookOpen className="absolute top-1/4 left-[10%] w-12 h-12 text-primary/10 -rotate-12 animate-pulse" />
-      <Sparkles className="absolute top-1/4 right-[10%] w-8 h-8 text-purple-500/20 rotate-12 animate-bounce duration-[3000ms]" />
-      
+        <div className="h-[20vh]" />
+      </main>
     </div>
   );
 }

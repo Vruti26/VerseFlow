@@ -1,74 +1,83 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import UserSearchResults from '@/components/users/user-search-results';
-import { Search, Users, Sparkles } from 'lucide-react';
+import { Search, Users, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return (
+        <div className="flex h-[100dvh] w-full items-center justify-center bg-background">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground animate-pulse">Loading community...</p>
+            </div>
+        </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-[100dvh] bg-background relative overflow-hidden flex flex-col items-center justify-start">
       
-      {/* 1. Ambient Background Effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-purple-500/10 dark:bg-purple-900/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[10%] w-[400px] h-[400px] bg-indigo-500/10 dark:bg-indigo-900/20 rounded-full blur-[100px]" />
-        {/* Noise Texture */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+      {/* Uniform Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[180vw] h-[60vh] md:w-[140vw] md:h-[80vh] bg-gradient-to-b from-primary/10 via-purple-500/5 to-transparent blur-[80px] md:blur-[120px] rounded-full opacity-60 dark:opacity-40" />
       </div>
 
-      <div className="container relative z-10 mx-auto px-4 py-16 md:py-24 max-w-5xl">
+      <div className="container relative z-10 mx-auto max-w-5xl px-4 pt-24 md:pt-32">
         
-        {/* 2. Hero Header */}
-        <div className="text-center space-y-6 mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        {/* Hero Header */}
+        <div className="text-center space-y-6 md:space-y-8 mb-8 md:mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
           <div className="flex justify-center">
-            <Badge variant="secondary" className="px-4 py-1.5 rounded-full text-sm font-medium border border-primary/10 bg-primary/5 text-primary backdrop-blur-sm">
-              <Users className="w-3.5 h-3.5 mr-2" />
+            <Badge variant="outline" className="px-4 py-1.5 rounded-full text-xs md:text-sm font-medium border-primary/20 bg-primary/5 text-primary backdrop-blur-md shadow-sm">
+              <Users className="w-3.5 h-3.5 mr-2 fill-current" />
               Community
             </Badge>
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight font-headline text-slate-900 dark:text-white">
-            Discover <span className=" bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400">Authors</span>
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-headline font-black tracking-tighter leading-[1.1] text-foreground">
+             Discover <br className="hidden md:block"/>
+             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-pink-600">
+               Authors & Readers
+             </span>
           </h1>
           
-          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base md:text-xl text-muted-foreground max-w-md md:max-w-2xl mx-auto leading-relaxed">
             Find your favorite writers, explore new voices, and build your literary network.
           </p>
         </div>
 
-        {/* 3. Superb Search Bar */}
-        <div className="max-w-2xl mx-auto mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-          <div className="relative group">
-            {/* Glow effect behind input */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+        {/* Search Bar Container */}
+        <div className="max-w-2xl mx-auto mb-10 md:mb-16 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+          <div className="relative group px-2 md:px-0">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary/30 to-purple-600/30 rounded-[1.5rem] blur-xl opacity-30 group-hover:opacity-50 transition duration-500 hidden md:block" />
             
             <div className="relative flex items-center">
-              <Search className="absolute left-4 w-6 h-6 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors duration-300" />
+              <Search className="absolute left-4 md:left-5 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors duration-300" />
               <Input
                 type="text"
-                placeholder="Search by username "
+                placeholder="Search by username..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-14 pl-14 pr-6 rounded-2xl border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl text-lg shadow-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
+                className="h-12 md:h-14 pl-12 md:pl-14 pr-6 rounded-2xl border-white/20 dark:border-white/10 bg-white/50 dark:bg-black/40 backdrop-blur-xl text-base md:text-lg shadow-xl focus:ring-0 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
               />
-              {searchTerm && (
-                <div className="absolute right-4 animate-pulse">
-                    <Sparkles className="w-5 h-5 text-primary/60" />
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        {/* 4. Results Section */}
-        <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 min-h-[300px]">
-            {/* The Search Results Component */}
-            {/* Pass a className or wrap it to ensure grid layout looks good */}
-            <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 md:p-8">
+        {/* Results Section */}
+        <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 min-h-[300px] mb-20">
+            <div className="bg-white/40 dark:bg-black/20 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-3xl md:rounded-[2rem] p-4 md:p-8 shadow-sm">
                 <UserSearchResults searchTerm={searchTerm} />
             </div>
         </div>

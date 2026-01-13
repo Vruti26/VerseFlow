@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { 
     Share2, Bookmark, Send, 
     BookOpen, Settings, ChevronLeft, ChevronRight, 
-    Type, Heart, MessageSquare, X, MessageCircle, Trash2, Eye
+    Type, Heart, MessageSquare, X, MessageCircle, Trash2, Eye, Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -65,6 +65,7 @@ export default function PublicBookPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const [isLoading, setIsLoading] = useState(true); // Added loading state
   const [book, setBook] = useState<Book | null>(null);
   const [author, setAuthor] = useState<Author | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -91,7 +92,10 @@ export default function PublicBookPage() {
   const [lineHeight, setLineHeight] = useState(1.8);
   const [readerTheme, setReaderTheme] = useState<'light' | 'sepia' | 'dark'>('light');
   
-  // Ref for tracking view count per session/chapter
+  const [scrollProgress, setScrollProgress] = useState(0);
+  
+  // Refs
+  const contentRef = useRef<HTMLDivElement>(null); 
   const chapterViewCounted = useRef(false); 
 
   // --- 1. Fetch Data ---
@@ -112,11 +116,14 @@ export default function PublicBookPage() {
                 if (uSnap.exists()) setAuthor({ uid: bookData.authorId, ...uSnap.data() } as Author);
              });
           }
+          setIsLoading(false); // Stop loading when book is found
         } else {
            setError("This book is not published.");
+           setIsLoading(false);
         }
       } else {
         setError("Book not found.");
+        setIsLoading(false);
       }
     });
 
@@ -177,7 +184,6 @@ export default function PublicBookPage() {
   const incrementView = async () => {
       if(!bookId || chapterViewCounted.current) return;
       
-      // Use localStorage to prevent spamming views on refresh
       const storageKey = `viewed_${bookId}_${activeChapterIndex}`;
       if (localStorage.getItem(storageKey)) return;
 
@@ -191,10 +197,21 @@ export default function PublicBookPage() {
       }
   };
 
-  // Reset view lock when chapter changes
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+      const totalScroll = scrollHeight - clientHeight;
+      const currentProgress = (scrollTop / totalScroll) * 100;
+      setScrollProgress(currentProgress);
+  };
+
+  // --- SCROLL RESET LOGIC ---
   useEffect(() => {
       chapterViewCounted.current = false;
-      // Scroll to top
+      setScrollProgress(0); // Reset progress bar
+      
+      if (contentRef.current) {
+          contentRef.current.scrollTop = 0;
+      }
       window.scrollTo(0,0);
   }, [activeChapterIndex]);
 
@@ -297,6 +314,26 @@ export default function PublicBookPage() {
       }
   };
 
+  const getProgressColor = () => {
+      switch(readerTheme) {
+          case 'sepia': return 'bg-[#8b6b52]';
+          case 'dark': return 'bg-[#a3a3a3]';
+          default: return 'bg-primary';
+      }
+  }
+
+  // --- LOADER ---
+  if (isLoading) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground animate-pulse">Loading book...</p>
+            </div>
+        </div>
+    );
+  }
+
   if (error || !book) return <div className="flex h-screen items-center justify-center text-red-500">{error}</div>;
 
   // ==========================================
@@ -306,11 +343,17 @@ export default function PublicBookPage() {
       const chapter = chapters[activeChapterIndex];
       const readerClasses = getReaderClasses();
       const borderClass = getBorderClass();
+      const progressColor = getProgressColor();
       const currentChapterComments = combinedComments.filter(c => c.chapterId === chapter.id);
 
       return (
           <div className={`fixed inset-0 z-50 flex flex-col transition-colors duration-300 ${readerClasses}`}>
               
+              {/* Progress Bar (Top) */}
+              <div className="h-1 w-full bg-black/5 dark:bg-white/5 z-50">
+                  <div className={`h-full transition-all duration-100 ease-out ${progressColor}`} style={{ width: `${scrollProgress}%` }} />
+              </div>
+
               {/* Toolbar */}
               <div className={`flex items-center justify-between px-4 py-2 border-b ${borderClass} backdrop-blur-md bg-inherit/95`}>
                   <Button variant="ghost" size="sm" onClick={() => setActiveChapterIndex(null)} className="gap-2 hover:bg-black/5 dark:hover:bg-white/10 -ml-2">
@@ -353,6 +396,8 @@ export default function PublicBookPage() {
               {/* Content Area */}
               <div className="flex flex-1 relative overflow-hidden">
                   <main 
+                    ref={contentRef}
+                    onScroll={handleScroll}
                     className="flex-1 h-full overflow-y-auto pb-20 scroll-smooth"
                   >
                       <div className="max-w-3xl mx-auto px-6 py-10 sm:px-8 md:py-16">
@@ -360,8 +405,25 @@ export default function PublicBookPage() {
                               {chapter.title}
                           </h1>
                           <div 
-                              className="font-serif prose prose-lg max-w-none focus:outline-none leading-relaxed"
-                              style={{ fontSize: `${fontSize}px`, lineHeight: lineHeight, color: 'inherit' }}
+                              className={`
+                                  font-serif 
+                                  max-w-none 
+                                  prose 
+                                  prose-lg 
+                                  dark:prose-invert 
+                                  focus:outline-none 
+                                  prose-p:my-6             
+                                  prose-p:leading-relaxed  
+                                  prose-headings:font-bold 
+                                  [&>p:empty]:min-h-[1.5em] 
+                                  whitespace-pre-wrap      
+                              `}
+                              style={{ 
+                                  fontSize: `${fontSize}px`, 
+                                  lineHeight: lineHeight, 
+                                  color: 'inherit',
+                                  textAlign: 'justify'
+                              }}
                               dangerouslySetInnerHTML={{ __html: chapter.content }}
                           />
                       </div>
@@ -376,7 +438,7 @@ export default function PublicBookPage() {
                               <Button 
                                 variant="default" 
                                 onClick={() => { 
-                                    incrementView(); // Simply count view on click
+                                    incrementView(); 
                                     if(activeChapterIndex < chapters.length - 1) setActiveChapterIndex(activeChapterIndex + 1); 
                                 }} 
                                 disabled={activeChapterIndex === chapters.length - 1} 
@@ -407,13 +469,15 @@ export default function PublicBookPage() {
                                           <div className="flex-1">
                                               <div className="flex items-center justify-between">
                                                   <div className="flex items-center gap-2">
-                                                      <span className="font-semibold text-xs">{comment.author.displayName}</span>
+                                                      {/* Link to Author Profile in Sidebar */}
+                                                      <Link href={`/profile/${comment.author.uid}`} className="font-semibold text-xs hover:underline">
+                                                          {comment.author.displayName}
+                                                      </Link>
                                                       <span className="text-[10px] opacity-60">
                                                           {formatDistanceToNow(comment.createdAt?.toDate() || new Date())}
                                                       </span>
                                                   </div>
                                                   {user && user.uid === comment.author.uid && (
-                                                      // Made opacity-100 on mobile (no hover needed)
                                                       <button 
                                                         className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                                                         onClick={() => handleDeleteComment(comment)}
@@ -518,7 +582,8 @@ export default function PublicBookPage() {
                  {author && (
                      <div className="flex items-center gap-2 text-muted-foreground">
                          <Avatar className="h-6 w-6"><AvatarImage src={author.photoURL} /></Avatar>
-                         <span>By <Link href={`/users/${author.uid}`} className="underline hover:text-primary font-medium">{author.displayName}</Link></span>
+                         {/* Link to Author Profile in Header */}
+                         <span>By <Link href={`/profile/${author.uid}`} className="underline hover:text-primary font-medium">{author.displayName}</Link></span>
                      </div>
                  )}
              </div>
@@ -596,7 +661,8 @@ export default function PublicBookPage() {
                                         <div className="flex-1 space-y-1">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <Link href={`/users/${c.author.uid}`} className="font-semibold text-sm hover:underline">{c.author.displayName}</Link>
+                                                    {/* Link to Author Profile in Comments */}
+                                                    <Link href={`/profile/${c.author.uid}`} className="font-semibold text-sm hover:underline">{c.author.displayName}</Link>
                                                     
                                                     {c.chapterTitle && (
                                                         <Badge variant="secondary" className="text-[10px] h-5 px-1.5 max-w-[150px] truncate">
