@@ -2,7 +2,7 @@
 A Modern Platform for Avid Readers and Writers
 VerseFlow is a seamless digital library and publishing platform designed to bridge the gap between storytellers and their audience. Built to offer a superior, lag-free experience for users (especially in regions where platforms like Wattpad face server issues), VerseFlow focuses on speed, readability, and community interaction.
 
-#🚀 Features
+# 🚀 Features
 For Readers
 📖 Frictionless Reading: Start reading immediately without creating an account (Lazy Registration).
 
@@ -26,7 +26,8 @@ Real-time Updates: Comments and likes update instantly across all clients.
 
 Responsive Design: Fully optimized for mobile reading and desktop writing.
 
-#🛠️ Tech Stack
+
+# 🛠️ Tech Stack
 Framework: Next.js 14 (App Router)
 
 Language: TypeScript
