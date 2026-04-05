@@ -16,7 +16,11 @@ export default function VerifyEmailButton() {
     if (!user) return;
     setIsSending(true);
     try {
-      await sendEmailVerification(user);
+      const actionCodeSettings = {
+        url: `${window.location.origin}/profile`,
+        handleCodeInApp: false,
+      };
+      await sendEmailVerification(user, actionCodeSettings);
       toast({
         title: 'Verification Email Sent',
         description: 'Please check your inbox to verify your email address.',

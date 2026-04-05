@@ -9,38 +9,48 @@ import { useToast } from '@/hooks/use-toast';
 
 type AuthContextType = {
   user: User | null;
+  isAdmin: boolean;
   loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  isAdmin: false,
   loading: true,
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
-        // If user is new (first sign-in) and email is not verified, send verification email
+        setIsAdmin(user.email === 'vrutirupapara@verseflow.com');
+
         if (user.metadata.creationTime === user.metadata.lastSignInTime && !user.emailVerified) {
             try {
-                await sendEmailVerification(user);
+                if (window.location.hostname === 'localhost') {
+                    await sendEmailVerification(user);
+                } else {
+                    const actionCodeSettings = {
+                        url: `${window.location.origin}/profile`,
+                        handleCodeInApp: false,
+                    };
+                    await sendEmailVerification(user, actionCodeSettings);
+                }
             } catch (error) {
                 console.error("Error sending verification email automatically:", error);
             }
         }
 
-        // User is signed in, manage their document in the users collection
         const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         const usersRef = collection(db, 'users');
 
         if (!userDocSnap.exists()) {
-          // If the document doesn't exist, create it.
           const newDisplayName = user.displayName;
           let finalDisplayName = 'Anonymous';
 
@@ -61,8 +71,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           try {
             await setDoc(userDocRef, {
               displayName: finalDisplayName,
+              email: user.email,
               photoURL: user.photoURL || '',
-              readingList: [], // Initialize with an empty reading list
+              readingList: [],
               followers: [],
               following: [],
             });
@@ -71,18 +82,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
         } else {
-          // If document exists and displayName is a placeholder, update it with auth data.
           const userData = userDocSnap.data();
+          const updates: { [key: string]: any } = {};
+
           if (userData.displayName === 'Anonymous' && user.displayName && user.displayName !== 'Anonymous') {
               const q = query(usersRef, where("displayName", "==", user.displayName));
               const querySnapshot = await getDocs(q);
 
               if (querySnapshot.empty) {
-                  try {
-                      await updateDoc(userDocRef, { displayName: user.displayName });
-                  } catch (error) {
-                      console.error("Error updating user displayName:", error);
-                  }
+                updates.displayName = user.displayName;
               } else {
                 toast({
                     variant: "destructive",
@@ -91,11 +99,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 });
               }
           }
+          
+          if (!userData.email && user.email) {
+            updates.email = user.email;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            try {
+                await updateDoc(userDocRef, updates);
+            } catch (error) {
+                console.error("Error updating user document:", error);
+            }
+          }
         }
 
         setUser(user);
       } else {
         setUser(null);
+        setIsAdmin(false);
       }
       setLoading(false);
     });
@@ -129,7 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading }}>
       {children}
     </AuthContext.Provider>
   );

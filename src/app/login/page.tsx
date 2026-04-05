@@ -39,12 +39,12 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && user.emailVerified) {
       router.push('/');
     }
   }, [user, router]);
 
-  if (user) return null;
+  if (user && user.emailVerified) return null;
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">

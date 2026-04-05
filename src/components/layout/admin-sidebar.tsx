@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/sidebar';
 
 const links = [
-    { href: '/admin', label: 'Dashboard', icon: Home },
     { href: '/admin/users', label: 'Users', icon: Users },
     { href: '/admin/books', label: 'Books', icon: BookOpen },
     { href: '/admin/reports', label: 'Reports', icon: Shield },
@@ -27,7 +26,7 @@ export function AdminSidebar() {
         <Sidebar>
             <SidebarContent>
                 <SidebarHeader>
-                    <Link href="/admin" className="flex items-center gap-2">
+                    <Link href="/admin/users" className="flex items-center gap-2">
                         <BookCopy className="h-6 w-6 text-primary" />
                         <span className="font-headline text-xl font-bold text-foreground">VerseFlow Admin</span>
                     </Link>

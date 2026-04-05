@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 import { Input } from '@/components/ui/input';
 import UserSearchResults from '@/components/users/user-search-results';
 import { Search, Users, Loader2 } from 'lucide-react';
@@ -8,12 +10,21 @@ import { Badge } from '@/components/ui/badge';
 
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();  const router = useRouter();
+  const [isPageLoading, setIsPageLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
+    const timer = setTimeout(() => setIsPageLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  const isLoading = authLoading || isPageLoading;
 
   if (isLoading) {
     return (
@@ -24,6 +35,10 @@ export default function UsersPage() {
             </div>
         </div>
     );
+  }
+  
+  if (!user) {
+    return null; // or a redirect message, but useEffect should handle it
   }
 
   return (
@@ -46,7 +61,7 @@ export default function UsersPage() {
           </div>
           
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-headline font-black tracking-tighter leading-[1.1] text-foreground">
-             Discover <br className="hidden md:block"/>
+             Discover <br className="hidden md:block" />
              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-500 to-pink-600">
                Authors & Readers
              </span>
