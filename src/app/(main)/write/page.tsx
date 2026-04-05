@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,10 +15,22 @@ import { Badge } from '@/components/ui/badge';
 
 export default function WritePage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [title, setTitle] = useState('');
+
+  useEffect(() => {
+    if (!loading && !user) {
+      toast({
+        title: "Authentication Required",
+        description: "You need to be logged in to access the write page.",
+        variant: "destructive",
+      });
+      router.push("/login");
+    }
+  }, [user, loading, router, toast]);
+
 
   const handleCreateAndRedirect = async () => {
     setIsCreating(true);
@@ -59,6 +71,15 @@ export default function WritePage() {
         setIsCreating(false);
     }
   };
+  
+    if (loading || !user) {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
+
 
   return (
     <div className="min-h-[100dvh] bg-background relative overflow-hidden flex flex-col items-center justify-start">

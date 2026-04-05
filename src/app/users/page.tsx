@@ -1,32 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
 import { Input } from '@/components/ui/input';
 import UserSearchResults from '@/components/users/user-search-results';
 import { Search, Users, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useRouter } from 'next/navigation';
 
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const { user, loading: authLoading } = useAuth();  const router = useRouter();
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsPageLoading(false), 800);
+    const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
-
-  const isLoading = authLoading || isPageLoading;
-
-  if (isLoading) {
+  if (loading || !user) {
     return (
         <div className="flex h-[100dvh] w-full items-center justify-center bg-background">
             <div className="flex flex-col items-center gap-4">

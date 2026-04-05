@@ -125,7 +125,7 @@ export default function AdminBooksPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent>
-                                            <Link href={`/books/${book.id}`} passHref><DropdownMenuItem>View Book</DropdownMenuItem></Link>
+                                            <Link href={`/books/${book.id}`}><DropdownMenuItem>View Book</DropdownMenuItem></Link>
                                             {book.status !== 'published' &&
                                                 <DropdownMenuItem onClick={() => handleStatusChange(book.id, 'published')}>Publish Book</DropdownMenuItem>
                                             }

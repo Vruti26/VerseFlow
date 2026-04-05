@@ -19,7 +19,7 @@ import { BookCopy, LogOut, User, Feather, Info, MessageSquare, LogIn, UserPlus, 
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { useUnreadMessages } from '@/hooks/useUnreadMessages'; // Import the new hook
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 function getInitials(email: string | null | undefined): string {
   if (!email) return '';
@@ -31,7 +31,7 @@ export default function GlobalHeader() {
   const { toast } = useToast();
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
-  const totalUnread = useUnreadMessages(); // Use the hook
+  const totalUnread = useUnreadMessages();
 
   const handleLogout = async () => {
     try {
@@ -57,7 +57,7 @@ export default function GlobalHeader() {
   ];
 
   const renderDesktopMenu = () => (
-    <div className="hidden  md:flex items-center space-x-2">
+    <div className="hidden md:flex items-center space-x-2">
         <Button variant="ghost" size="icon" onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}>
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -121,6 +121,13 @@ export default function GlobalHeader() {
                     {user && user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User Avatar'} />}
                     <AvatarFallback>{user ? getInitials(user.email) : <User className="h-5 w-5"/>}</AvatarFallback>
                 </Avatar>
+                
+                {/* --- Indicator for Not Logged In (Red Dot) --- */}
+                {!user && (
+                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-red-500 border-2 border-background" />
+                )}
+                {/* --------------------------------------------- */}
+
             </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="end" forceMount>

@@ -65,7 +65,7 @@ export default function PublicBookPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [isLoading, setIsLoading] = useState(true); // Added loading state
+  const [isLoading, setIsLoading] = useState(true); 
   const [book, setBook] = useState<Book | null>(null);
   const [author, setAuthor] = useState<Author | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -94,7 +94,6 @@ export default function PublicBookPage() {
   
   const [scrollProgress, setScrollProgress] = useState(0);
   
-  // Refs
   const contentRef = useRef<HTMLDivElement>(null); 
   const chapterViewCounted = useRef(false); 
 
@@ -116,7 +115,7 @@ export default function PublicBookPage() {
                 if (uSnap.exists()) setAuthor({ uid: bookData.authorId, ...uSnap.data() } as Author);
              });
           }
-          setIsLoading(false); // Stop loading when book is found
+          setIsLoading(false); 
         } else {
            setError("This book is not published.");
            setIsLoading(false);
@@ -204,10 +203,9 @@ export default function PublicBookPage() {
       setScrollProgress(currentProgress);
   };
 
-  // --- SCROLL RESET LOGIC ---
   useEffect(() => {
       chapterViewCounted.current = false;
-      setScrollProgress(0); // Reset progress bar
+      setScrollProgress(0);
       
       if (contentRef.current) {
           contentRef.current.scrollTop = 0;
@@ -217,10 +215,13 @@ export default function PublicBookPage() {
 
 
   const handleLike = async () => {
-    if (!user || !book) {
-        toast({ variant: 'destructive', title: 'Please log in to like' });
+    // AUTH CHECK: Triggered on click
+    if (!user) {
+        toast({ title: 'Login Required', description: 'Please log in to like this book.' });
         return;
     }
+    if (!book) return;
+
     const bookRef = doc(db, 'books', book.id);
     try {
         if (isLiked) {
@@ -239,8 +240,9 @@ export default function PublicBookPage() {
   };
 
   const handleAddToLibrary = async () => {
+    // AUTH CHECK: Triggered on click
     if (!user) {
-        toast({ variant: 'destructive', title: 'Please log in' });
+        toast({ title: 'Login Required', description: 'Please log in to add to your library.' });
         return;
     }
     const userRef = doc(db, 'users', user.uid);
@@ -256,9 +258,15 @@ export default function PublicBookPage() {
 
   const handlePostComment = async (e: React.FormEvent, isChapterComment: boolean) => {
       e.preventDefault();
+      // AUTH CHECK: Triggered on click
+      if (!user) {
+          toast({ title: 'Login Required', description: 'Please log in to post a comment.' });
+          return;
+      }
+      
       const text = isChapterComment ? readerCommentText : mainCommentText;
 
-      if (!user || !text.trim()) return;
+      if (!text.trim()) return;
       
       setIsSubmitting(true);
       try {
@@ -469,7 +477,6 @@ export default function PublicBookPage() {
                                           <div className="flex-1">
                                               <div className="flex items-center justify-between">
                                                   <div className="flex items-center gap-2">
-                                                      {/* Link to Author Profile in Sidebar */}
                                                       <Link href={`/profile/${comment.author.uid}`} className="font-semibold text-xs hover:underline">
                                                           {comment.author.displayName}
                                                       </Link>
@@ -498,21 +505,17 @@ export default function PublicBookPage() {
                           </div>
 
                           <div className={`p-3 border-t ${borderClass}`}>
-                              {user ? (
-                                  <form onSubmit={(e) => handlePostComment(e, true)} className="flex gap-2 items-end">
-                                      <Input 
-                                          value={readerCommentText}
-                                          onChange={e => setReaderCommentText(e.target.value)}
-                                          placeholder="Type a comment..." 
-                                          className={`flex-1 bg-transparent border-current/20 focus-visible:ring-1 focus-visible:ring-current placeholder:text-current/40 h-9 text-sm`}
-                                      />
-                                      <Button type="submit" size="icon" disabled={!readerCommentText.trim() || isSubmitting} variant="ghost" className="hover:bg-current/10 h-9 w-9">
-                                          <Send className="w-4 h-4" />
-                                      </Button>
-                                  </form>
-                              ) : (
-                                  <p className="text-xs text-center opacity-60">Log in to comment.</p>
-                              )}
+                              <form onSubmit={(e) => handlePostComment(e, true)} className="flex gap-2 items-end">
+                                  <Input 
+                                      value={readerCommentText}
+                                      onChange={e => setReaderCommentText(e.target.value)}
+                                      placeholder={user ? "Type a comment..." : "Log in to comment..."}
+                                      className={`flex-1 bg-transparent border-current/20 focus-visible:ring-1 focus-visible:ring-current placeholder:text-current/40 h-9 text-sm`}
+                                  />
+                                  <Button type="submit" size="icon" disabled={!readerCommentText.trim() || isSubmitting} variant="ghost" className="hover:bg-current/10 h-9 w-9">
+                                      <Send className="w-4 h-4" />
+                                  </Button>
+                              </form>
                           </div>
                       </aside>
                   )}
@@ -582,7 +585,6 @@ export default function PublicBookPage() {
                  {author && (
                      <div className="flex items-center gap-2 text-muted-foreground">
                          <Avatar className="h-6 w-6"><AvatarImage src={author.photoURL} /></Avatar>
-                         {/* Link to Author Profile in Header */}
                          <span>By <Link href={`/profile/${author.uid}`} className="underline hover:text-primary font-medium">{author.displayName}</Link></span>
                      </div>
                  )}
@@ -606,99 +608,92 @@ export default function PublicBookPage() {
                          <h3 className="text-lg font-bold mb-3 border-l-4 border-primary pl-3">Table of Contents</h3>
                          <div className="space-y-2">
                              {chapters.length > 0 ? (
-                                 chapters.map((chapter, idx) => (
-                                     <Card 
-                                        key={chapter.id} 
-                                        className="cursor-pointer hover:bg-muted/50 transition-colors border-l-4 border-l-transparent hover:border-l-primary group"
-                                        onClick={() => setActiveChapterIndex(idx)}
-                                     >
-                                         <CardContent className="p-4 flex justify-between items-center">
-                                             <div className="flex items-center gap-3">
-                                                 <span className="text-muted-foreground/50 font-mono text-sm w-6">{idx + 1}.</span>
-                                                 <h3 className="text-base md:text-lg font-medium group-hover:text-primary transition-colors">{chapter.title}</h3>
-                                             </div>
-                                             {/* Force opacity-100 on mobile */}
-                                             <ChevronRight className="h-4 w-4 text-muted-foreground/50 opacity-100 md:opacity-50 md:group-hover:text-primary md:group-hover:opacity-100" />
-                                         </CardContent>
-                                     </Card>
-                                 ))
+                                  chapters.map((chapter, idx) => (
+                                      <Card 
+                                         key={chapter.id} 
+                                         className="cursor-pointer hover:bg-muted/50 transition-colors border-l-4 border-l-transparent hover:border-l-primary group"
+                                         onClick={() => setActiveChapterIndex(idx)}
+                                      >
+                                          <CardContent className="p-4 flex justify-between items-center">
+                                              <div className="flex items-center gap-3">
+                                                  <span className="text-muted-foreground/50 font-mono text-sm w-6">{idx + 1}.</span>
+                                                  <h3 className="text-base md:text-lg font-medium group-hover:text-primary transition-colors">{chapter.title}</h3>
+                                              </div>
+                                              <ChevronRight className="h-4 w-4 text-muted-foreground/50 opacity-100 md:opacity-50 md:group-hover:text-primary md:group-hover:opacity-100" />
+                                          </CardContent>
+                                      </Card>
+                                  ))
                              ) : (
-                                 <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">No chapters published yet.</div>
+                                  <div className="text-center py-10 text-muted-foreground border-2 border-dashed rounded-lg">No chapters published yet.</div>
                              )}
                          </div>
                      </section>
                  </TabsContent>
 
                  <TabsContent value="comments" className="mt-6 space-y-6">
-                     {user ? (
-                        <div className="border p-4 rounded-lg bg-muted/20 space-y-3">
-                            <h4 className="font-semibold text-sm">Leave a Comment</h4>
-                            <Textarea 
-                                value={mainCommentText} 
-                                onChange={e => setMainCommentText(e.target.value)} 
-                                placeholder="Share your thoughts about this book..." 
-                                className="bg-background min-h-[100px]"
-                            />
-                            <div className="flex justify-end">
-                                <Button onClick={(e) => handlePostComment(e, false)} disabled={isSubmitting || !mainCommentText.trim()}>
-                                    {isSubmitting ? 'Posting...' : 'Post Comment'}
-                                </Button>
-                            </div>
-                        </div>
-                     ) : (
-                         <div className="text-center p-6 bg-muted/20 rounded-md text-muted-foreground">Log in to post a comment</div>
-                     )}
-                     
-                     <div className="space-y-6">
-                        {combinedComments.length > 0 ? (
-                            combinedComments.map(c => (
-                                <div key={c.id} className="border-b pb-6 last:border-0 group">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <Avatar className="h-10 w-10 border bg-muted">
-                                            <AvatarImage src={c.author.photoURL} />
-                                            <AvatarFallback>{c.author.displayName[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1 space-y-1">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    {/* Link to Author Profile in Comments */}
-                                                    <Link href={`/profile/${c.author.uid}`} className="font-semibold text-sm hover:underline">{c.author.displayName}</Link>
-                                                    
-                                                    {c.chapterTitle && (
-                                                        <Badge variant="secondary" className="text-[10px] h-5 px-1.5 max-w-[150px] truncate">
-                                                            {c.chapterTitle}
-                                                        </Badge>
-                                                    )}
-                                                    
-                                                    <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
-                                                    <span className="text-xs text-muted-foreground">{formatDistanceToNow(c.createdAt?.toDate() || new Date())} ago</span>
-                                                </div>
-                                                
-                                                {user && user.uid === c.author.uid && (
-                                                    // Force opacity-100 on mobile
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
-                                                        className="h-6 w-6 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
-                                                        onClick={() => handleDeleteComment(c)}
-                                                        title="Delete Comment"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{c.text}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                                <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-20"/>
-                                <p>No comments yet. Be the first to share your thoughts!</p>
-                            </div>
-                        )}
-                     </div>
+                      <div className="border p-4 rounded-lg bg-muted/20 space-y-3 relative">
+                           {/* LOGIN BADGE REMOVED HERE, USING TOAST INSTEAD */}
+                           <h4 className="font-semibold text-sm">Leave a Comment</h4>
+                           <Textarea 
+                               value={mainCommentText} 
+                               onChange={e => setMainCommentText(e.target.value)} 
+                               placeholder={user ? "Share your thoughts about this book..." : "Log in to join the discussion..."}
+                               className="bg-background min-h-[100px]"
+                           />
+                           <div className="flex justify-end">
+                               <Button 
+                                   onClick={(e) => handlePostComment(e, false)} 
+                                   disabled={isSubmitting || !mainCommentText.trim()}
+                               >
+                                   {isSubmitting ? 'Posting...' : 'Post Comment'}
+                               </Button>
+                           </div>
+                       </div>
+                      
+                      <div className="space-y-6">
+                         {combinedComments.length > 0 ? (
+                             combinedComments.map(c => (
+                                 <div key={c.id} className="border-b pb-6 last:border-0 group">
+                                     <div className="flex justify-between items-start gap-4">
+                                         <Avatar className="h-10 w-10 border bg-muted">
+                                             <AvatarImage src={c.author.photoURL} />
+                                             <AvatarFallback>{c.author.displayName[0]}</AvatarFallback>
+                                         </Avatar>
+                                         <div className="flex-1 space-y-1">
+                                             <div className="flex items-center justify-between">
+                                                 <div className="flex items-center gap-2 flex-wrap">
+                                                     <Link href={`/profile/${c.author.uid}`} className="font-semibold text-sm hover:underline">{c.author.displayName}</Link>
+                                                     {c.chapterTitle && (
+                                                         <Badge variant="secondary" className="text-[10px] h-5 px-1.5 max-w-[150px] truncate">
+                                                             {c.chapterTitle}
+                                                         </Badge>
+                                                     )}
+                                                     <span className="text-xs text-muted-foreground hidden sm:inline">•</span>
+                                                     <span className="text-xs text-muted-foreground">{formatDistanceToNow(c.createdAt?.toDate() || new Date())} ago</span>
+                                                 </div>
+                                                 {user && user.uid === c.author.uid && (
+                                                     <Button 
+                                                         variant="ghost" 
+                                                         size="icon" 
+                                                         className="h-6 w-6 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:text-destructive"
+                                                         onClick={() => handleDeleteComment(c)}
+                                                     >
+                                                         <Trash2 className="w-3.5 h-3.5" />
+                                                     </Button>
+                                                 )}
+                                             </div>
+                                             <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{c.text}</p>
+                                         </div>
+                                     </div>
+                                 </div>
+                             ))
+                         ) : (
+                             <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                                 <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-20"/>
+                                 <p>No comments yet. Be the first to share your thoughts!</p>
+                             </div>
+                         )}
+                      </div>
                  </TabsContent>
 
              </Tabs>

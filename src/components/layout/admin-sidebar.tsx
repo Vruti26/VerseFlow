@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookCopy, Home, Users, BookOpen, Shield, LogOut } from 'lucide-react';
+import { BookCopy, Home, Users, BookOpen, Shield, LogOut, Megaphone, User } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +17,7 @@ const links = [
     { href: '/admin/users', label: 'Users', icon: Users },
     { href: '/admin/books', label: 'Books', icon: BookOpen },
     { href: '/admin/reports', label: 'Reports', icon: Shield },
+    { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
 ];
 
 export function AdminSidebar() {
@@ -35,16 +36,16 @@ export function AdminSidebar() {
                     <SidebarMenu>
                         {links.map((link) => (
                             <SidebarMenuItem key={link.href}>
-                                <Link href={link.href} legacyBehavior passHref>
+                                <Link href={link.href}>
                                     <SidebarMenuButton
                                         isActive={pathname === link.href}
                                         tooltip={link.label}
                                         asChild
                                     >
-                                        <a>
+                                        <span>
                                             <link.icon />
                                             <span>{link.label}</span>
-                                        </a>
+                                        </span>
                                     </SidebarMenuButton>
                                 </Link>
                             </SidebarMenuItem>
@@ -55,12 +56,12 @@ export function AdminSidebar() {
             <SidebarFooter>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <Link href="/" legacyBehavior passHref>
-                            <SidebarMenuButton tooltip="Back to App">
-                                <a>
+                        <Link href="/">
+                           <SidebarMenuButton tooltip="Back to App">
+                                <span>
                                     <LogOut />
                                     <span>Back to App</span>
-                                </a>
+                                </span>
                             </SidebarMenuButton>
                         </Link>
                     </SidebarMenuItem>
