@@ -28,7 +28,7 @@ Responsive Design: Fully optimized for mobile reading and desktop writing.
 
 
 # 🛠️ Tech Stack
-Framework: Next.js 14 (App Router)
+Framework: Next.js 
 
 Language: TypeScript
 
